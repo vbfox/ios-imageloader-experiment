@@ -10,11 +10,25 @@ import UIKit
 import PromiseKit
 import PMKFoundation
 
+class FooPicture: Codable {
+    var large: String?
+    var medium: String?
+    var thumbnail: String?
+}
+
+class FooResult: Codable {
+    var gender: String = ""
+    var picture: FooPicture
+}
+
+class Foo: Codable {
+    var results: [FooResult] = []
+}
+
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
     private let itemsPerRow: Int = 3
     private let sectionInsets = UIEdgeInsets(top: 50.0, left: 20.0, bottom: 50.0, right: 20.0)
-
    
     override func viewDidLoad() {
         NSLog("viewDidLoad")
@@ -27,6 +41,15 @@ final class PhotosViewController: UICollectionViewController {
         self.collectionView!.register(PhotoViewCell.self, forCellWithReuseIdentifier: reuseIdentifier)
 
         // Do any additional setup after loading the view.
+        firstly {
+            URLSession.shared.dataTask(.promise, with: try makeUrlRequest()).validate()
+        }.map {
+            try JSONDecoder().decode(Foo.self, from: $0.data)
+        }.done { foo in
+            print(foo.results.count)
+            print(foo.results[0].gender)
+            print(foo.results[0].picture.large!)
+        }
     }
 
     /*
@@ -74,6 +97,14 @@ final class PhotosViewController: UICollectionViewController {
     }
     */
 
+}
+
+func makeUrlRequest() throws -> URLRequest {
+    let url = URL(string: "https://randomuser.me/api/?results=500")!
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+    request.addValue("application/json", forHTTPHeaderField: "Accept")
+    return request
 }
 
 extension PhotosViewController
