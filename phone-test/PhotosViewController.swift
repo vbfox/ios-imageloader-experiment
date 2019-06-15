@@ -10,9 +10,123 @@ import UIKit
 import PromiseKit
 import PMKFoundation
 
+enum LoadingState {
+    case notLoaded
+    case loading
+    case finished
+}
 
+enum ImageLoadingError: Error {
+    case invalidSate
+}
 
+class ImageToLoad {
+    private(set) var index: Int
+    private(set) var url: URL
+    private(set) var promise: Promise<UIImage>
+    private(set) var state: LoadingState
+    private var resolver: Resolver<UIImage>
+    
+    init(index: Int, url: URL) {
+        self.state = LoadingState.notLoaded
+        self.index = index
+        self.url = url
+        let (promise, resolver) = Promise<UIImage>.pending()
+        self.promise = promise
+        self.resolver = resolver
+    }
+    
+    static func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage> {
+        func makeImageRequest() -> URLRequest {
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            return request
+        }
+        
+        let req = makeImageRequest()
+        return firstly {
+            URLSession.shared.dataTask(.promise, with: req).validate()
+        }.compactMap(on: queue) {
+            UIImage(data: $0.data)
+        }
+    }
+    
+    func startLoading(on queue: DispatchQueue) throws -> Promise<UIImage> {
+        if state != LoadingState.notLoaded {
+            throw ImageLoadingError.invalidSate
+        }
+        
+        state = LoadingState.loading
+        
+        firstly {
+            ImageToLoad.loadImageFrom(url, on: queue)
+        }.pipe { result in
+            self.resolver.resolve(result)
+            self.state = LoadingState.finished
+        }
+        
+        return self.promise
+    }
+}
 
+class ImageLoader {
+    private var inProgress: Int = 0
+    private let minInProgress: Int = 1
+    private let maxInProgress: Int = 20
+    private let mainQueue = DispatchQueue(label: "net.vbfox.imageloader.main", qos: .userInitiated)
+    private let imageProcessQueue = DispatchQueue(label: "net.vbfox.imageloader.process", qos: .background, attributes: .concurrent)
+    private var remaining: [ImageToLoad]
+    private let currentIndex: Int = 0
+    private(set) var promises: [Promise<UIImage>]
+    var imageFinished: ((Int) -> ())?
+    
+    init(urls: [URL]) {
+        remaining = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url) }
+        promises = remaining.map { toLoad in toLoad.promise }
+        
+        mainQueue.async {
+            self.fill()
+        }
+    }
+    
+    private func fill() {
+        while(inProgress < minInProgress && remaining.count > 0) {
+            addInProgress()
+        }
+    }
+    
+    private func addInProgress() {
+        if remaining.count == 0 {
+            return
+        }
+        
+        let toLoad = remaining[0]
+        remaining.remove(at: 0)
+        
+        func loadingFinished() {
+            inProgress -= 1
+            print("Finished \(toLoad.index)")
+            fill()
+            if imageFinished != nil {
+                DispatchQueue.main.async {
+                    self.imageFinished?(toLoad.index)
+                }
+            }
+        }
+
+        print("Starting \(toLoad.index)")
+        inProgress += 1
+        firstly {
+            try! toLoad.startLoading(on: imageProcessQueue)
+        }.done(on: mainQueue) { _ in
+            loadingFinished()
+        }.catch(on: mainQueue) {
+            // Not much we can do, the UI also has the promise and can better handle it
+            print("Failed loading '\(toLoad.url)': \($0)")
+            loadingFinished()
+        }
+    }
+}
 
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
@@ -20,7 +134,7 @@ final class PhotosViewController: UICollectionViewController {
     private let sectionInsets = UIEdgeInsets(top: 20.0, left: 10.0, bottom: 20.0, right: 10.0)
     let bgq = DispatchQueue.global(qos: .userInitiated)
     var users: [RandomUserInfo] = []
-    var photos: [UIImage?] = []
+    var loader: ImageLoader?
     
     override func viewDidLoad() {
         NSLog("viewDidLoad")
@@ -35,48 +149,25 @@ final class PhotosViewController: UICollectionViewController {
    
     func startLoadingResults() {
         firstly {
-            RandomUser.get(resultCount: 5000)
-        }.done { foo in
-            self.users = foo.results
-            self.photos = Array(repeating: nil, count: foo.results.count)
-            for i in 0...foo.results.count-1 {
-                let user = foo.results[i]
-                self.collectionView!.reloadData()
-                self.loadUserImageAndUpdate(index: i, user: user);
-            }
-            print(foo.results.count)
-            print(foo.results[0].gender)
-            print(foo.results[0].picture.large!)
+            RandomUser.get(resultCount: 500)
+        }.done { response in
+            let urls = response.results.map { user in URL(string: user.picture!.large!)! }
+            self.users = response.results
+            self.loader = ImageLoader.init(urls: urls)
+            self.loader?.imageFinished = self.onImageFinishedLoading
+            self.collectionView!.reloadData()
+            
         }.catch {
             print($0)
         }
     }
     
-    func loadUserImageAndUpdate(index: Int, user: RandomUserInfo) {
-        firstly {
-            loadUserImage(user: user)
-        }.done { image in
-            self.photos[index] = image;
-            print(String(format: "Loaded user image at index %i", index))
-            self.collectionView!.reloadData()
-            }.catch {
-                print($0)
-        }
-    }
-    
-    func loadUserImage(user: RandomUserInfo) -> Promise<UIImage> {
-        func makeImageRequest(urlString: String) -> URLRequest {
-            let url = URL(string: urlString)!
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            return request
-        }
-        
-        let req = makeImageRequest(urlString: user.picture.large!)
-        return firstly {
-            URLSession.shared.dataTask(.promise, with: req).validate()
-        }.compactMap(on: bgq) {
-            UIImage(data: $0.data)
+    func onImageFinishedLoading(index: Int) {
+        for cell in self.collectionView!.visibleCells {
+            let photoCell = cell as! PhotoViewCell
+            if photoCell.index == index {
+                photoCell.refreshPhoto()
+            }
         }
     }
     
@@ -134,16 +225,16 @@ extension PhotosViewController
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return self.photos.count
+        return self.users.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! PhotoViewCell
         
-        let image = self.photos[indexPath.row]
+        let image = self.loader!.promises[indexPath.row]
         let user = self.users[indexPath.row]
         
-        cell.showUser(user, withImage: image)
+        cell.showUser(user, withImage: image, atIndex: indexPath.row)
         
         return cell
     }

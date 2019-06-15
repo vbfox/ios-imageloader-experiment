@@ -27,9 +27,9 @@ class RandomuserName: Codable {
 }
 
 class RandomUserInfo: Codable {
-    var gender: String = ""
-    var name: RandomuserName
-    var picture: RandomUserPicture
+    var gender: String?
+    var name: RandomuserName?
+    var picture: RandomUserPicture?
 }
 
 
@@ -44,7 +44,7 @@ class RandomUser
     static func get(resultCount: Int = 500, bgQueue: DispatchObject? = bgq) -> Promise<RandomUserResponse> {
         
         func createRequest() -> URLRequest {
-            let url = URL(string: "https://randomuser.me/api/?results=\(resultCount)&seed=zenly")!
+            let url = URL(string: "https://randomuser.me/api/?results=\(resultCount)&seed=zenly&inc=name,picture&noinfo")!
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.addValue("application/json", forHTTPHeaderField: "Accept")
