@@ -10,26 +10,28 @@ import UIKit
 import PromiseKit
 import PMKFoundation
 
-class FooPicture: Codable {
+class RandomUserPicture: Codable {
     var large: String?
     var medium: String?
     var thumbnail: String?
 }
 
-class FooResult: Codable {
+class RandomUserInfo: Codable {
     var gender: String = ""
-    var picture: FooPicture
+    var picture: RandomUserPicture
 }
 
-class Foo: Codable {
-    var results: [FooResult] = []
+class RandomUserResponse: Codable {
+    var results: [RandomUserInfo] = []
 }
 
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
     private let itemsPerRow: Int = 3
     private let sectionInsets = UIEdgeInsets(top: 50.0, left: 20.0, bottom: 50.0, right: 20.0)
-   
+    let bgq = DispatchQueue.global(qos: .userInitiated)
+    var photos: [UIImage?] = []
+    
     override func viewDidLoad() {
         NSLog("viewDidLoad")
         super.viewDidLoad()
@@ -37,21 +39,72 @@ final class PhotosViewController: UICollectionViewController {
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
 
-        // Register cell classes
-        self.collectionView!.register(PhotoViewCell.self, forCellWithReuseIdentifier: reuseIdentifier)
-
         // Do any additional setup after loading the view.
+        self.startLoadingResults();
+    }
+
+    func getRandomUsers() -> Promise<RandomUserResponse> {
+        func createRequest() -> URLRequest {
+            let url = URL(string: "https://randomuser.me/api/?results=500")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.addValue("application/json", forHTTPHeaderField: "Accept")
+            return request
+        }
+        
+        return firstly {
+            URLSession.shared.dataTask(.promise, with: createRequest()).validate()
+        }.compactMap(on: bgq) {
+            try JSONDecoder().decode(RandomUserResponse.self, from: $0.data)
+        }
+    }
+    
+    func startLoadingResults() {
         firstly {
-            URLSession.shared.dataTask(.promise, with: try makeUrlRequest()).validate()
-        }.map {
-            try JSONDecoder().decode(Foo.self, from: $0.data)
+            getRandomUsers()
         }.done { foo in
+            self.photos = Array(repeating: nil, count: foo.results.count)
+            for i in 0...foo.results.count-1 {
+                let user = foo.results[i]
+                self.collectionView!.reloadData()
+                self.loadUserImageAndUpdate(index: i, user: user);
+            }
             print(foo.results.count)
             print(foo.results[0].gender)
             print(foo.results[0].picture.large!)
+        }.catch {
+            print($0)
         }
     }
-
+    
+    func loadUserImageAndUpdate(index: Int, user: RandomUserInfo) {
+        firstly {
+            loadUserImage(user: user)
+        }.done { image in
+            self.photos[index] = image;
+            print(String(format: "Loaded user image at index %i", index))
+            self.collectionView!.reloadData()
+            }.catch {
+                print($0)
+        }
+    }
+    
+    func loadUserImage(user: RandomUserInfo) -> Promise<UIImage> {
+        func makeImageRequest(urlString: String) -> URLRequest {
+            let url = URL(string: urlString)!
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            return request
+        }
+        
+        let req = makeImageRequest(urlString: user.picture.large!)
+        return firstly {
+            URLSession.shared.dataTask(.promise, with: req).validate()
+        }.compactMap(on: bgq) {
+            UIImage(data: $0.data)
+        }
+    }
+    
     /*
     // MARK: - Navigation
 
@@ -99,13 +152,9 @@ final class PhotosViewController: UICollectionViewController {
 
 }
 
-func makeUrlRequest() throws -> URLRequest {
-    let url = URL(string: "https://randomuser.me/api/?results=500")!
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    request.addValue("application/json", forHTTPHeaderField: "Accept")
-    return request
-}
+
+
+
 
 extension PhotosViewController
 {
@@ -114,15 +163,21 @@ extension PhotosViewController
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of items
-        return 8 * itemsPerRow + 1
+        return photos.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! PhotoViewCell
-            
+        
+        let image = photos[indexPath.row]
         //cell.backgroundColor = UIColor.orange
         cell.load()
+        if image != nil {
+            cell.backgroundColor = UIColor.white
+            cell.imageOutlet.image = image
+        } else {
+            cell.backgroundColor = UIColor.red
+        }
         
         
         return cell

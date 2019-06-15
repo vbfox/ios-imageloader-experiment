@@ -34,6 +34,13 @@
                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="JCR-dD-1pv">
                                             <rect key="frame" x="0.0" y="0.0" width="120" height="120"/>
                                         </imageView>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rg9-WA-4i7">
+                                            <rect key="frame" x="20" y="39" width="42" height="21"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
                                     </subviews>
                                 </view>
                                 <constraints>
@@ -43,6 +50,8 @@
                                     <constraint firstAttribute="bottom" secondItem="JCR-dD-1pv" secondAttribute="bottom" id="niY-AR-1i8"/>
                                 </constraints>
                                 <connections>
+                                    <outlet property="bar" destination="JCR-dD-1pv" id="s9u-jI-yQ8"/>
+                                    <outlet property="foo" destination="rg9-WA-4i7" id="7YZ-Za-T7K"/>
                                     <outlet property="imageOutlet" destination="JCR-dD-1pv" id="SaS-4d-vET"/>
                                 </connections>
                             </collectionViewCell>

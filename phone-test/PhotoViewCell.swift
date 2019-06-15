@@ -11,6 +11,9 @@ import UIKit
 class PhotoViewCell: UICollectionViewCell {
     @IBOutlet weak var imageOutlet: UIImageView!
     
+    @IBOutlet weak var foo: UILabel!
+    
+    @IBOutlet weak var bar: UIImageView!
     override init(frame: CGRect) {
         super.init(frame: frame)
     }
