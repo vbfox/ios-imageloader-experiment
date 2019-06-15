@@ -10,16 +10,34 @@ import UIKit
 import PromiseKit
 import PMKFoundation
 
+extension String {
+    func capitalizingFirstLetter() -> String {
+        return prefix(1).uppercased() + self.lowercased().dropFirst()
+    }
+}
+
 class RandomUserPicture: Codable {
     var large: String?
     var medium: String?
     var thumbnail: String?
 }
 
+class RandomuserName: Codable {
+    var title: String = ""
+    var first: String = ""
+    var last: String = ""
+    
+    func toString() -> String {
+        return "\(first.capitalizingFirstLetter()) \(last.capitalizingFirstLetter())"
+    }
+}
+
 class RandomUserInfo: Codable {
     var gender: String = ""
+    var name: RandomuserName
     var picture: RandomUserPicture
 }
+
 
 class RandomUserResponse: Codable {
     var results: [RandomUserInfo] = []
@@ -28,8 +46,9 @@ class RandomUserResponse: Codable {
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
     private let itemsPerRow: Int = 3
-    private let sectionInsets = UIEdgeInsets(top: 50.0, left: 20.0, bottom: 50.0, right: 20.0)
+    private let sectionInsets = UIEdgeInsets(top: 20.0, left: 10.0, bottom: 20.0, right: 10.0)
     let bgq = DispatchQueue.global(qos: .userInitiated)
+    var users: [RandomUserInfo] = []
     var photos: [UIImage?] = []
     
     override func viewDidLoad() {
@@ -45,7 +64,7 @@ final class PhotosViewController: UICollectionViewController {
 
     func getRandomUsers() -> Promise<RandomUserResponse> {
         func createRequest() -> URLRequest {
-            let url = URL(string: "https://randomuser.me/api/?results=500")!
+            let url = URL(string: "https://randomuser.me/api/?results=500&seed=zenly")!
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.addValue("application/json", forHTTPHeaderField: "Accept")
@@ -63,6 +82,7 @@ final class PhotosViewController: UICollectionViewController {
         firstly {
             getRandomUsers()
         }.done { foo in
+            self.users = foo.results
             self.photos = Array(repeating: nil, count: foo.results.count)
             for i in 0...foo.results.count-1 {
                 let user = foo.results[i]
@@ -163,20 +183,24 @@ extension PhotosViewController
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return photos.count
+        return self.photos.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! PhotoViewCell
         
-        let image = photos[indexPath.row]
+        let image = self.photos[indexPath.row]
+        let user = self.users[indexPath.row]
         //cell.backgroundColor = UIColor.orange
-        cell.load()
+        cell.foo.text = user.name.toString()
         if image != nil {
             cell.backgroundColor = UIColor.white
             cell.imageOutlet.image = image
+            cell.foo.textColor = UIColor.white
+
         } else {
             cell.backgroundColor = UIColor.red
+            cell.foo.textColor = UIColor.black
         }
         
         
@@ -202,6 +226,7 @@ extension PhotosViewController: UICollectionViewDelegateFlowLayout
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
+        
         return sectionInsets
     }
     

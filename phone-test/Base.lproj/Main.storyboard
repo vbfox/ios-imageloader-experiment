@@ -34,23 +34,26 @@
                                         <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="JCR-dD-1pv">
                                             <rect key="frame" x="0.0" y="0.0" width="120" height="120"/>
                                         </imageView>
-                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rg9-WA-4i7">
-                                            <rect key="frame" x="20" y="39" width="42" height="21"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                            <nil key="textColor"/>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="rg9-WA-4i7">
+                                            <rect key="frame" x="0.0" y="98.666666666666671" width="120" height="21.333333333333329"/>
+                                            <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
+                                            <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                             <nil key="highlightedColor"/>
+                                            <color key="shadowColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <size key="shadowOffset" width="1" height="1"/>
                                         </label>
                                     </subviews>
                                 </view>
                                 <constraints>
-                                    <constraint firstItem="JCR-dD-1pv" firstAttribute="top" secondItem="QfI-7d-5cO" secondAttribute="top" id="7qy-CF-7wy"/>
-                                    <constraint firstAttribute="trailing" secondItem="JCR-dD-1pv" secondAttribute="trailing" id="gcb-BD-bip"/>
-                                    <constraint firstItem="JCR-dD-1pv" firstAttribute="leading" secondItem="QfI-7d-5cO" secondAttribute="leading" id="il2-06-bhH"/>
-                                    <constraint firstAttribute="bottom" secondItem="JCR-dD-1pv" secondAttribute="bottom" id="niY-AR-1i8"/>
+                                    <constraint firstAttribute="trailing" secondItem="rg9-WA-4i7" secondAttribute="trailing" id="2sO-R1-tsJ"/>
+                                    <constraint firstAttribute="bottom" secondItem="JCR-dD-1pv" secondAttribute="bottom" id="JXw-14-DAi"/>
+                                    <constraint firstItem="JCR-dD-1pv" firstAttribute="top" secondItem="QfI-7d-5cO" secondAttribute="top" id="MGd-dx-yee"/>
+                                    <constraint firstAttribute="trailing" secondItem="JCR-dD-1pv" secondAttribute="trailing" id="PgH-Z3-Ken"/>
+                                    <constraint firstItem="rg9-WA-4i7" firstAttribute="leading" secondItem="QfI-7d-5cO" secondAttribute="leading" id="f4N-ed-ZI4"/>
+                                    <constraint firstItem="JCR-dD-1pv" firstAttribute="leading" secondItem="QfI-7d-5cO" secondAttribute="leading" id="gRJ-zc-1sL"/>
+                                    <constraint firstAttribute="bottom" secondItem="rg9-WA-4i7" secondAttribute="bottom" id="vyi-P0-DGI"/>
                                 </constraints>
                                 <connections>
-                                    <outlet property="bar" destination="JCR-dD-1pv" id="s9u-jI-yQ8"/>
                                     <outlet property="foo" destination="rg9-WA-4i7" id="7YZ-Za-T7K"/>
                                     <outlet property="imageOutlet" destination="JCR-dD-1pv" id="SaS-4d-vET"/>
                                 </connections>

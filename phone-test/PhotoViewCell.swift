@@ -13,16 +13,10 @@ class PhotoViewCell: UICollectionViewCell {
     
     @IBOutlet weak var foo: UILabel!
     
-    @IBOutlet weak var bar: UIImageView!
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-    }
-    
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-    }
-    
-    func load() {
-        self.backgroundColor = UIColor.orange
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        foo?.text = ""
+        imageOutlet?.image = nil
     }
 }
