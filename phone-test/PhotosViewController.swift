@@ -89,7 +89,7 @@ extension PhotosViewController
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! PhotoViewCell
             
         //cell.backgroundColor = UIColor.orange
-        
+        cell.load()
         
         
         return cell
