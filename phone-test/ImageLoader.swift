@@ -13,7 +13,7 @@ enum ImageLoadingError: Error {
 }
 
 class ImageToLoad {
-    private(set) var indexes: [Int]
+    private(set) var index: Int
     let url: URL
     let promise: Promise<UIImage>
     private(set) var state: LoadingState
@@ -23,15 +23,11 @@ class ImageToLoad {
     init(index: Int, url: URL, urlSession: URLSession) {
         self.urlSession = urlSession
         self.state = LoadingState.notLoaded
-        self.indexes = [index]
+        self.index = index
         self.url = url
         let (promise, resolver) = Promise<UIImage>.pending()
         self.promise = promise
         self.resolver = resolver
-    }
-    
-    func addIndex(_ index: Int) {
-        indexes.append(index)
     }
     
     static func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage> {
@@ -42,10 +38,11 @@ class ImageToLoad {
         }
         
         let req = makeImageRequest()
+        let (task, p) = URLSession.shared.dataTaskAndPromise(with: req)
         return firstly {
-            URLSession.shared.dataTask(.promise, with: req).validate()
-            }.compactMap(on: queue) {
-                UIImage(data: $0.data)
+            p.validate()
+        }.compactMap(on: queue) {
+            UIImage(data: $0.data)
         }
     }
     
@@ -79,19 +76,9 @@ class ImageLoader {
     var imageFinished: ((Int) -> ())?
     
     init(urls: [URL], urlSession: URLSession = URLSession.shared) {
-        for (i, url) in urls.enumerated() {
-            let existing = remaining.first { r in r.url == url }
-            switch existing {
-            case .none:
-                let toLoad = ImageToLoad.init(index: i, url: url, urlSession: urlSession)
-                remaining.append(toLoad)
-                promises.append(toLoad.promise)
-            case .some(let someExisting):
-                someExisting.addIndex(i)
-                promises.append(someExisting.promise)
-            }
-        }
-        
+        remaining = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url, urlSession: urlSession) }
+        promises = remaining.map { toLoad in toLoad.promise }
+
         mainQueue.async {
             self.fill()
         }
@@ -113,18 +100,16 @@ class ImageLoader {
         
         func loadingFinished() {
             inProgress -= 1
-            print("Finished \(toLoad.indexes)")
+            print("Finished \(toLoad.index)")
             fill()
             if imageFinished != nil {
                 DispatchQueue.main.async {
-                    for index in toLoad.indexes {
-                        self.imageFinished?(index)
-                    }
+                    self.imageFinished?(toLoad.index)
                 }
             }
         }
         
-        print("Starting \(toLoad.indexes)")
+        print("Starting \(toLoad.index)")
         inProgress += 1
         firstly {
             try! toLoad.startLoading(on: imageProcessQueue)
@@ -135,5 +120,8 @@ class ImageLoader {
                 print("Failed loading '\(toLoad.url)': \($0)")
                 loadingFinished()
         }
+    }
+    
+    private func prioritize(index: Int) {
     }
 }
