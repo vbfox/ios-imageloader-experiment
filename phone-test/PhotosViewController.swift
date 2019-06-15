@@ -7,6 +7,8 @@
 //
 
 import UIKit
+import PromiseKit
+import PMKFoundation
 
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"

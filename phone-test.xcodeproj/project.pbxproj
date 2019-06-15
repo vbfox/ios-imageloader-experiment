@@ -16,6 +16,12 @@
 		981C6AFE22B4CE14008F63A9 /* phone_testUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6AFD22B4CE14008F63A9 /* phone_testUITests.swift */; };
 		981C6B0C22B4D8B8008F63A9 /* PhotosViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B0B22B4D8B8008F63A9 /* PhotosViewController.swift */; };
 		981C6B0E22B51461008F63A9 /* PhotoViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B0D22B51461008F63A9 /* PhotoViewCell.swift */; };
+		981C6B1022B51FC7008F63A9 /* PromiseKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */; };
+		981C6B1222B51FD2008F63A9 /* PMKFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */; };
+		981C6B1322B5206F008F63A9 /* PromiseKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */; };
+		981C6B1422B5206F008F63A9 /* PromiseKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		981C6B1622B52072008F63A9 /* PMKFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */; };
+		981C6B1722B52072008F63A9 /* PMKFoundation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +41,21 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		981C6B1522B5206F008F63A9 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				981C6B1722B52072008F63A9 /* PMKFoundation.framework in Embed Frameworks */,
+				981C6B1422B5206F008F63A9 /* PromiseKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		981C6ADA22B4CE12008F63A9 /* phone-test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "phone-test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		981C6ADD22B4CE12008F63A9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -51,6 +72,8 @@
 		981C6AFF22B4CE14008F63A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		981C6B0B22B4D8B8008F63A9 /* PhotosViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosViewController.swift; sourceTree = "<group>"; };
 		981C6B0D22B51461008F63A9 /* PhotoViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoViewCell.swift; sourceTree = "<group>"; };
+		981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PromiseKit.framework; path = Carthage/Build/iOS/PromiseKit.framework; sourceTree = SOURCE_ROOT; };
+		981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PMKFoundation.framework; path = Carthage/Build/iOS/PMKFoundation.framework; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +81,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				981C6B1322B5206F008F63A9 /* PromiseKit.framework in Frameworks */,
+				981C6B1222B51FD2008F63A9 /* PMKFoundation.framework in Frameworks */,
+				981C6B1622B52072008F63A9 /* PMKFoundation.framework in Frameworks */,
+				981C6B1022B51FC7008F63A9 /* PromiseKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,7 +128,9 @@
 		981C6ADC22B4CE12008F63A9 /* phone-test */ = {
 			isa = PBXGroup;
 			children = (
+				981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */,
 				981C6ADD22B4CE12008F63A9 /* AppDelegate.swift */,
+				981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */,
 				981C6ADF22B4CE12008F63A9 /* ViewController.swift */,
 				981C6AE122B4CE12008F63A9 /* Main.storyboard */,
 				981C6B0D22B51461008F63A9 /* PhotoViewCell.swift */,
@@ -141,6 +170,7 @@
 				981C6AD622B4CE12008F63A9 /* Sources */,
 				981C6AD722B4CE12008F63A9 /* Frameworks */,
 				981C6AD822B4CE12008F63A9 /* Resources */,
+				981C6B1522B5206F008F63A9 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -442,6 +472,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 38GHBCDG9C;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = "phone-test/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -460,6 +494,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 38GHBCDG9C;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = "phone-test/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
