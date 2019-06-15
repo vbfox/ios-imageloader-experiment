@@ -38,9 +38,8 @@ final class PhotosViewController: UICollectionViewController {
 
     func onImageFinishedLoading(index: Int) {
         for cell in cells {
-            let photoCell = cell as! PhotoViewCell
-            if photoCell.index == index {
-                photoCell.refreshPhoto()
+            if cell.index == index {
+                cell.refreshPhoto()
             }
         }
     }
@@ -71,6 +70,18 @@ extension PhotosViewController
         cell.showUser(user, withImage: image, atIndex: photoIndex)
         
         return cell
+    }
+}
+
+extension PhotosViewController: UICollectionViewDataSourcePrefetching {
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        for indexPath in indexPaths {
+            loader!.prioritize(index: indexPath.row)
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        
     }
 }
 
