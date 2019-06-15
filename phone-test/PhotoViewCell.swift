@@ -19,4 +19,17 @@ class PhotoViewCell: UICollectionViewCell {
         foo?.text = ""
         imageOutlet?.image = nil
     }
+    
+    func showUser(_ user: RandomUserInfo, withImage image: UIImage?) {
+        foo.text = user.name.toString()
+        if image != nil {
+            backgroundColor = UIColor.white
+            imageOutlet.image = image
+            foo.textColor = UIColor.white
+            
+        } else {
+            backgroundColor = UIColor.red
+            foo.textColor = UIColor.black
+        }
+    }
 }

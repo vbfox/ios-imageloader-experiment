@@ -10,38 +10,9 @@ import UIKit
 import PromiseKit
 import PMKFoundation
 
-extension String {
-    func capitalizingFirstLetter() -> String {
-        return prefix(1).uppercased() + self.lowercased().dropFirst()
-    }
-}
-
-class RandomUserPicture: Codable {
-    var large: String?
-    var medium: String?
-    var thumbnail: String?
-}
-
-class RandomuserName: Codable {
-    var title: String = ""
-    var first: String = ""
-    var last: String = ""
-    
-    func toString() -> String {
-        return "\(first.capitalizingFirstLetter()) \(last.capitalizingFirstLetter())"
-    }
-}
-
-class RandomUserInfo: Codable {
-    var gender: String = ""
-    var name: RandomuserName
-    var picture: RandomUserPicture
-}
 
 
-class RandomUserResponse: Codable {
-    var results: [RandomUserInfo] = []
-}
+
 
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
@@ -61,26 +32,10 @@ final class PhotosViewController: UICollectionViewController {
         // Do any additional setup after loading the view.
         self.startLoadingResults();
     }
-
-    func getRandomUsers() -> Promise<RandomUserResponse> {
-        func createRequest() -> URLRequest {
-            let url = URL(string: "https://randomuser.me/api/?results=500&seed=zenly")!
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Accept")
-            return request
-        }
-        
-        return firstly {
-            URLSession.shared.dataTask(.promise, with: createRequest()).validate()
-        }.compactMap(on: bgq) {
-            try JSONDecoder().decode(RandomUserResponse.self, from: $0.data)
-        }
-    }
-    
+   
     func startLoadingResults() {
         firstly {
-            getRandomUsers()
+            RandomUser.get(resultCount: 5000)
         }.done { foo in
             self.users = foo.results
             self.photos = Array(repeating: nil, count: foo.results.count)
@@ -172,10 +127,6 @@ final class PhotosViewController: UICollectionViewController {
 
 }
 
-
-
-
-
 extension PhotosViewController
 {
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -191,18 +142,8 @@ extension PhotosViewController
         
         let image = self.photos[indexPath.row]
         let user = self.users[indexPath.row]
-        //cell.backgroundColor = UIColor.orange
-        cell.foo.text = user.name.toString()
-        if image != nil {
-            cell.backgroundColor = UIColor.white
-            cell.imageOutlet.image = image
-            cell.foo.textColor = UIColor.white
-
-        } else {
-            cell.backgroundColor = UIColor.red
-            cell.foo.textColor = UIColor.black
-        }
         
+        cell.showUser(user, withImage: image)
         
         return cell
     }
@@ -210,11 +151,10 @@ extension PhotosViewController
 
 extension PhotosViewController: UICollectionViewDelegateFlowLayout
 {
-    //1
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        //2
+        // TODO: Use a better size computation
         let paddingSpace = sectionInsets.left * (CGFloat(itemsPerRow) + 1)
         let availableWidth = view.frame.width - paddingSpace
         let widthPerItem = availableWidth / CGFloat(itemsPerRow)
@@ -222,7 +162,6 @@ extension PhotosViewController: UICollectionViewDelegateFlowLayout
         return CGSize(width: widthPerItem, height: widthPerItem)
     }
     
-    //3
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
@@ -230,7 +169,6 @@ extension PhotosViewController: UICollectionViewDelegateFlowLayout
         return sectionInsets
     }
     
-    // 4
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         minimumLineSpacingForSectionAt section: Int) -> CGFloat {

@@ -22,6 +22,8 @@
 		981C6B1422B5206F008F63A9 /* PromiseKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		981C6B1622B52072008F63A9 /* PMKFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */; };
 		981C6B1722B52072008F63A9 /* PMKFoundation.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		981C6B1922B578DA008F63A9 /* RandomUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B1822B578DA008F63A9 /* RandomUser.swift */; };
+		981C6B1B22B57904008F63A9 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B1A22B57904008F63A9 /* Utils.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +76,8 @@
 		981C6B0D22B51461008F63A9 /* PhotoViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoViewCell.swift; sourceTree = "<group>"; };
 		981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PromiseKit.framework; path = Carthage/Build/iOS/PromiseKit.framework; sourceTree = SOURCE_ROOT; };
 		981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PMKFoundation.framework; path = Carthage/Build/iOS/PMKFoundation.framework; sourceTree = SOURCE_ROOT; };
+		981C6B1822B578DA008F63A9 /* RandomUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomUser.swift; sourceTree = "<group>"; };
+		981C6B1A22B57904008F63A9 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,12 +133,14 @@
 			isa = PBXGroup;
 			children = (
 				981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */,
-				981C6ADD22B4CE12008F63A9 /* AppDelegate.swift */,
 				981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */,
+				981C6ADD22B4CE12008F63A9 /* AppDelegate.swift */,
 				981C6ADF22B4CE12008F63A9 /* ViewController.swift */,
 				981C6AE122B4CE12008F63A9 /* Main.storyboard */,
-				981C6B0D22B51461008F63A9 /* PhotoViewCell.swift */,
+				981C6B1A22B57904008F63A9 /* Utils.swift */,
+				981C6B1822B578DA008F63A9 /* RandomUser.swift */,
 				981C6B0B22B4D8B8008F63A9 /* PhotosViewController.swift */,
+				981C6B0D22B51461008F63A9 /* PhotoViewCell.swift */,
 				981C6AE422B4CE13008F63A9 /* Assets.xcassets */,
 				981C6AE622B4CE13008F63A9 /* LaunchScreen.storyboard */,
 				981C6AE922B4CE13008F63A9 /* Info.plist */,
@@ -296,6 +302,8 @@
 				981C6AE022B4CE12008F63A9 /* ViewController.swift in Sources */,
 				981C6ADE22B4CE12008F63A9 /* AppDelegate.swift in Sources */,
 				981C6B0E22B51461008F63A9 /* PhotoViewCell.swift in Sources */,
+				981C6B1922B578DA008F63A9 /* RandomUser.swift in Sources */,
+				981C6B1B22B57904008F63A9 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
