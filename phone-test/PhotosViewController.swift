@@ -5,9 +5,9 @@ final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
     private let itemsPerRow: Int = 3
     private let sectionInsets = UIEdgeInsets(top: 20.0, left: 10.0, bottom: 20.0, right: 10.0)
-    let bgq = DispatchQueue.global(qos: .userInitiated)
-    var users: [RandomUserInfo] = []
-    var loader: ImageLoader?
+    private var users: [RandomUserInfo] = []
+    private var loader: ImageLoader?
+    private var cells: Set<PhotoViewCell> = Set<PhotoViewCell>()
     
     override func viewDidLoad() {
         NSLog("viewDidLoad")
@@ -37,7 +37,7 @@ final class PhotosViewController: UICollectionViewController {
     }
 
     func onImageFinishedLoading(index: Int) {
-        for cell in self.collectionView!.visibleCells {
+        for cell in cells {
             let photoCell = cell as! PhotoViewCell
             if photoCell.index == index {
                 photoCell.refreshPhoto()
@@ -58,11 +58,17 @@ extension PhotosViewController
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! PhotoViewCell
+        cells.insert(cell)
         
-        let image = self.loader!.promises[indexPath.row]
-        let user = self.users[indexPath.row]
+        let photoIndex = indexPath.row
+        let image = self.loader!.promises[photoIndex]
+        let user = self.users[photoIndex]
         
-        cell.showUser(user, withImage: image, atIndex: indexPath.row)
+        if image.result == nil {
+            loader!.prioritize(index: photoIndex)
+        }
+        
+        cell.showUser(user, withImage: image, atIndex: photoIndex)
         
         return cell
     }

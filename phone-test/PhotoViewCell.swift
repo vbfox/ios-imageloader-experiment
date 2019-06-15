@@ -37,10 +37,9 @@ class PhotoViewCell: UICollectionViewCell {
     }
     
     func refreshPhoto() {
+        if imagePromise!.result == nil {
+            print("BOOOOOOOOOOOOOOOOOOOOOM")
+        }
         showImage(imagePromise!)
-    }
-    
-    override func removeFromSuperview() {
-        super.removeFromSuperview()
     }
 }

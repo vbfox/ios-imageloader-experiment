@@ -66,17 +66,20 @@ class ImageToLoad {
 
 class ImageLoader {
     private var inProgress: Int = 0
-    private let minInProgress: Int = 10
+    private let minInProgress: Int = 20
     private let maxInProgress: Int = 20
     private let mainQueue = DispatchQueue(label: "net.vbfox.imageloader.main", qos: .userInitiated)
     private let imageProcessQueue = DispatchQueue(label: "net.vbfox.imageloader.process", qos: .background, attributes: .concurrent)
+    private var all: [ImageToLoad] = []
     private var remaining: [ImageToLoad] = []
     private let currentIndex: Int = 0
     private(set) var promises: [Promise<UIImage>] = []
     var imageFinished: ((Int) -> ())?
     
+    
     init(urls: [URL], urlSession: URLSession = URLSession.shared) {
-        remaining = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url, urlSession: urlSession) }
+        all = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url, urlSession: urlSession) }
+        remaining = all
         promises = remaining.map { toLoad in toLoad.promise }
 
         mainQueue.async {
@@ -113,15 +116,29 @@ class ImageLoader {
         inProgress += 1
         firstly {
             try! toLoad.startLoading(on: imageProcessQueue)
-            }.done(on: mainQueue) { _ in
-                loadingFinished()
-            }.catch(on: mainQueue) {
-                // Not much we can do, the UI also has the promise and can better handle it
-                print("Failed loading '\(toLoad.url)': \($0)")
-                loadingFinished()
+        }.done(on: mainQueue) { _ in
+            loadingFinished()
+        }.catch(on: mainQueue) {
+            // Not much we can do, the UI also has the promise and can better handle it
+            print("Failed loading '\(toLoad.url)': \($0)")
+            loadingFinished()
         }
     }
     
-    private func prioritize(index: Int) {
+    func prioritize(index: Int) {
+        mainQueue.async {
+            let task = self.all[index]
+            if task.state == .notLoaded {
+                let indexInRemaining = self.remaining.firstIndex { value in value.index == index }
+                if indexInRemaining != nil {
+                    self.remaining.remove(at: indexInRemaining!)
+                    self.remaining.insert(task, at: 0)
+                    
+                    if self.inProgress < self.maxInProgress {
+                        self.addInProgress()
+                    }
+                }
+            }
+        }
     }
 }
