@@ -21,19 +21,25 @@ enum ImageLoadingError: Error {
 }
 
 class ImageToLoad {
-    private(set) var index: Int
-    private(set) var url: URL
-    private(set) var promise: Promise<UIImage>
+    private(set) var indexes: [Int]
+    let url: URL
+    let promise: Promise<UIImage>
     private(set) var state: LoadingState
     private var resolver: Resolver<UIImage>
+    private let urlSession: URLSession
     
-    init(index: Int, url: URL) {
+    init(index: Int, url: URL, urlSession: URLSession) {
+        self.urlSession = urlSession
         self.state = LoadingState.notLoaded
-        self.index = index
+        self.indexes = [index]
         self.url = url
         let (promise, resolver) = Promise<UIImage>.pending()
         self.promise = promise
         self.resolver = resolver
+    }
+    
+    func addIndex(_ index: Int) {
+        indexes.append(index)
     }
     
     static func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage> {
@@ -71,18 +77,28 @@ class ImageToLoad {
 
 class ImageLoader {
     private var inProgress: Int = 0
-    private let minInProgress: Int = 1
+    private let minInProgress: Int = 10
     private let maxInProgress: Int = 20
     private let mainQueue = DispatchQueue(label: "net.vbfox.imageloader.main", qos: .userInitiated)
     private let imageProcessQueue = DispatchQueue(label: "net.vbfox.imageloader.process", qos: .background, attributes: .concurrent)
-    private var remaining: [ImageToLoad]
+    private var remaining: [ImageToLoad] = []
     private let currentIndex: Int = 0
-    private(set) var promises: [Promise<UIImage>]
+    private(set) var promises: [Promise<UIImage>] = []
     var imageFinished: ((Int) -> ())?
     
-    init(urls: [URL]) {
-        remaining = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url) }
-        promises = remaining.map { toLoad in toLoad.promise }
+    init(urls: [URL], urlSession: URLSession = URLSession.shared) {
+        for (i, url) in urls.enumerated() {
+            let existing = remaining.first { r in r.url == url }
+            switch existing {
+            case .none:
+                let toLoad = ImageToLoad.init(index: i, url: url, urlSession: urlSession)
+                remaining.append(toLoad)
+                promises.append(toLoad.promise)
+            case .some(let someExisting):
+                someExisting.addIndex(i)
+                promises.append(someExisting.promise)
+            }
+        }
         
         mainQueue.async {
             self.fill()
@@ -105,16 +121,18 @@ class ImageLoader {
         
         func loadingFinished() {
             inProgress -= 1
-            print("Finished \(toLoad.index)")
+            print("Finished \(toLoad.indexes)")
             fill()
             if imageFinished != nil {
                 DispatchQueue.main.async {
-                    self.imageFinished?(toLoad.index)
+                    for index in toLoad.indexes {
+                        self.imageFinished?(index)
+                    }
                 }
             }
         }
 
-        print("Starting \(toLoad.index)")
+        print("Starting \(toLoad.indexes)")
         inProgress += 1
         firstly {
             try! toLoad.startLoading(on: imageProcessQueue)
@@ -144,6 +162,7 @@ final class PhotosViewController: UICollectionViewController {
         // self.clearsSelectionOnViewWillAppear = false
 
         // Do any additional setup after loading the view.
+        URLCache.shared.removeAllCachedResponses()
         self.startLoadingResults();
     }
    
@@ -161,7 +180,7 @@ final class PhotosViewController: UICollectionViewController {
             print($0)
         }
     }
-    
+
     func onImageFinishedLoading(index: Int) {
         for cell in self.collectionView!.visibleCells {
             let photoCell = cell as! PhotoViewCell
