@@ -16,6 +16,32 @@ protocol ImageUrlLoader {
     func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage>
 }
 
+protocol ImageCache {
+    func add(url: URL, image: UIImage)
+    func tryGet(url: URL) -> UIImage?
+    func clear()
+}
+
+class InMemoryImageCache: ImageCache {
+    private var cache = NSCache<NSString, UIImage>()
+    
+    func add(url: URL, image: UIImage ) {
+        cache.setObject(image, forKey: url.absoluteString as NSString)
+    }
+    
+    func tryGet(url: URL) -> UIImage? {
+        return cache.object(forKey: url.absoluteString as NSString)
+    }
+    
+    func clear() {
+        cache.removeAllObjects()
+    }
+}
+/*
+class LoaderWithCache: ImageUrlLoader {
+    
+}
+*/
 class ImageUrlSessionLoader: ImageUrlLoader {
     init() {
     }
@@ -135,7 +161,7 @@ class ImageListLoader {
         }
     }
     
-    func prioritize(index: Int) {
+    func prioritize(index: Int, isPrefetch: Bool) {
         mainQueue.async {
             let task = self.all[index]
             if task.state == .notLoaded {
@@ -143,8 +169,7 @@ class ImageListLoader {
                 if indexInRemaining != nil {
                     self.remaining.remove(at: indexInRemaining!)
                     self.remaining.insert(task, at: 0)
-                    
-                    if self.inProgress < self.maxInProgress {
+                    if !isPrefetch && (self.inProgress < self.maxInProgress) {
                         self.addInProgress()
                     }
                 }

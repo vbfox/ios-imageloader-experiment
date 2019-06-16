@@ -10,13 +10,8 @@ final class PhotosViewController: UICollectionViewController {
     private var cells: Set<PhotoViewCell> = Set<PhotoViewCell>()
     
     override func viewDidLoad() {
-        NSLog("viewDidLoad")
         super.viewDidLoad()
 
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Do any additional setup after loading the view.
         URLCache.shared.removeAllCachedResponses()
         self.startLoadingResults();
     }
@@ -30,13 +25,15 @@ final class PhotosViewController: UICollectionViewController {
             self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init())
             self.loader?.imageFinished = self.onImageFinishedLoading
             self.collectionView!.reloadData()
-            
         }.catch {
             print($0)
         }
     }
 
     func onImageFinishedLoading(index: Int) {
+        // We can't use visibleCells as it's missing loaded cells that are out of screen, and cells can't
+        // subscribe to their promises as tehre is not way to unsubscribe also looping a few elements and
+        // comparing integers is cheap (We're on the main thread)
         for cell in cells {
             if cell.index == index {
                 cell.refreshPhoto()
@@ -64,7 +61,8 @@ extension PhotosViewController
         let user = self.users[photoIndex]
         
         if image.result == nil {
-            loader!.prioritize(index: photoIndex)
+            // The image isn't there yet, try to start loading it immediately
+            loader!.prioritize(index: photoIndex, isPrefetch: false)
         }
         
         cell.showUser(user, withImage: image, atIndex: photoIndex)
@@ -76,26 +74,31 @@ extension PhotosViewController
 extension PhotosViewController: UICollectionViewDataSourcePrefetching {
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
         for indexPath in indexPaths {
-            loader!.prioritize(index: indexPath.row)
+            // Prioritize it's download but don't force start
+            loader!.prioritize(index: indexPath.row, isPrefetch: true)
         }
     }
     
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
-        
+        // No need to cancel as we don't force-start downloads until the item is really in view
     }
 }
 
 extension PhotosViewController: UICollectionViewDelegateFlowLayout
 {
+    func getItemSize() -> CGFloat {
+        let padding = sectionInsets.left * (CGFloat(itemsPerRow) + 1)
+        let availableWidth = view.frame.width - padding
+        return availableWidth / CGFloat(itemsPerRow)
+    }
+    
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        // TODO: Use a better size computation
-        let paddingSpace = sectionInsets.left * (CGFloat(itemsPerRow) + 1)
-        let availableWidth = view.frame.width - paddingSpace
-        let widthPerItem = availableWidth / CGFloat(itemsPerRow)
+        let itemSize = getItemSize();
+
         
-        return CGSize(width: widthPerItem, height: widthPerItem)
+        return CGSize(width: itemSize, height: itemSize)
     }
     
     func collectionView(_ collectionView: UICollectionView,
