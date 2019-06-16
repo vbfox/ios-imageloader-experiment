@@ -6,7 +6,7 @@ final class PhotosViewController: UICollectionViewController {
     private let itemsPerRow: Int = 3
     private let sectionInsets = UIEdgeInsets(top: 20.0, left: 10.0, bottom: 20.0, right: 10.0)
     private var users: [RandomUserInfo] = []
-    private var loader: ImageLoader?
+    private var loader: ImageListLoader?
     private var cells: Set<PhotoViewCell> = Set<PhotoViewCell>()
     
     override func viewDidLoad() {
@@ -27,7 +27,7 @@ final class PhotosViewController: UICollectionViewController {
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageLoader.init(urls: urls)
+            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init())
             self.loader?.imageFinished = self.onImageFinishedLoading
             self.collectionView!.reloadData()
             

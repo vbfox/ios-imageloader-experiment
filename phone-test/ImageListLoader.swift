@@ -12,25 +12,15 @@ enum ImageLoadingError: Error {
     case invalidSate
 }
 
-class ImageToLoad {
-    private(set) var index: Int
-    let url: URL
-    let promise: Promise<UIImage>
-    private(set) var state: LoadingState
-    private var resolver: Resolver<UIImage>
-    private let urlSession: URLSession
-    
-    init(index: Int, url: URL, urlSession: URLSession) {
-        self.urlSession = urlSession
-        self.state = LoadingState.notLoaded
-        self.index = index
-        self.url = url
-        let (promise, resolver) = Promise<UIImage>.pending()
-        self.promise = promise
-        self.resolver = resolver
+protocol ImageUrlLoader {
+    func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage>
+}
+
+class ImageUrlSessionLoader: ImageUrlLoader {
+    init() {
     }
     
-    static func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage> {
+    func loadImageFrom(_ url: URL, on queue: DispatchQueue) -> Promise<UIImage> {
         func makeImageRequest() -> URLRequest {
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
@@ -38,12 +28,33 @@ class ImageToLoad {
         }
         
         let req = makeImageRequest()
-        let (task, p) = URLSession.shared.dataTaskAndPromise(with: req)
+        let (_, p) = URLSession.shared.dataTaskAndPromise(with: req)
+        
         return firstly {
             p.validate()
         }.compactMap(on: queue) {
             UIImage(data: $0.data)
         }
+    }
+}
+
+class ImageToLoad {
+    private(set) var index: Int
+    let url: URL
+    let promise: Promise<UIImage>
+    private(set) var state: LoadingState
+    private var resolver: Resolver<UIImage>
+    private let imageLoader: ImageUrlLoader
+    
+    init(index: Int, url: URL, imageLoader: ImageUrlLoader) {
+        self.index = index
+        self.url = url
+        self.imageLoader = imageLoader
+        self.state = LoadingState.notLoaded
+        
+        let (promise, resolver) = Promise<UIImage>.pending()
+        self.promise = promise
+        self.resolver = resolver
     }
     
     func startLoading(on queue: DispatchQueue) throws -> Promise<UIImage> {
@@ -54,7 +65,7 @@ class ImageToLoad {
         state = LoadingState.loading
         
         firstly {
-            ImageToLoad.loadImageFrom(url, on: queue)
+            imageLoader.loadImageFrom(url, on: queue)
             }.pipe { result in
                 self.resolver.resolve(result)
                 self.state = LoadingState.finished
@@ -64,7 +75,7 @@ class ImageToLoad {
     }
 }
 
-class ImageLoader {
+class ImageListLoader {
     private var inProgress: Int = 0
     private let minInProgress: Int = 20
     private let maxInProgress: Int = 20
@@ -76,9 +87,8 @@ class ImageLoader {
     private(set) var promises: [Promise<UIImage>] = []
     var imageFinished: ((Int) -> ())?
     
-    
-    init(urls: [URL], urlSession: URLSession = URLSession.shared) {
-        all = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url, urlSession: urlSession) }
+    init(urls: [URL], imageLoader: ImageUrlLoader) {
+        all = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url, imageLoader: imageLoader) }
         remaining = all
         promises = remaining.map { toLoad in toLoad.promise }
 
