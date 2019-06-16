@@ -8,22 +8,47 @@ final class PhotosViewController: UICollectionViewController {
     private var users: [RandomUserInfo] = []
     private var loader: ImageListLoader?
     private var cells: Set<PhotoViewCell> = Set<PhotoViewCell>()
+    private var imageCache: ImageCache!
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        URLCache.shared.removeAllCachedResponses()
-        let imageCache = try! CacheImageCache.init(name: "Photos", sizeLimit: 10 * 1024 * 1024)
-        self.startLoadingResults(imageCache: imageCache);
+        navigationItem.leftBarButtonItems = [
+            UIBarButtonItem(title: "Clear Caches", style: .plain, target: self, action: #selector(clearCaches))
+        ]
+        
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(title: "Refresh", style: .plain, target: self, action: #selector(refresh))
+        ]
+        
+        imageCache = try! CacheImageCache.init(name: "Photos", sizeLimit: 10 * 1024 * 1024)
+        self.startLoadingResults();
     }
-   
-    func startLoadingResults(imageCache: ImageCache) {
+    
+    @objc
+    private func clearCaches() {
+        URLCache.shared.removeAllCachedResponses()
+        imageCache.clear()
+    }
+    
+    @objc
+    private func refresh() {
+        startLoadingResults()
+    }
+    
+    private func startLoadingResults() {
+        users = []
+        self.loader?.imageFinished = .none
+        loader = .none
+        cells.removeAll()
+        collectionView!.reloadData()
+        
         firstly {
             RandomUser.get(resultCount: 500)
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init(), imageCache: imageCache)
+            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache)
             self.loader?.imageFinished = self.onImageFinishedLoading
             self.collectionView!.reloadData()
         }.catch {
@@ -31,7 +56,7 @@ final class PhotosViewController: UICollectionViewController {
         }
     }
 
-    func onImageFinishedLoading(index: Int) {
+    private func onImageFinishedLoading(index: Int) {
         // We can't use visibleCells as it's missing loaded cells that are out of screen, and cells can't
         // subscribe to their promises as tehre is not way to unsubscribe also looping a few elements and
         // comparing integers is cheap (We're on the main thread)
