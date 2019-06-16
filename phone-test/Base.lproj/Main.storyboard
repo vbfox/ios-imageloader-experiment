@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Czi-ET-OT4">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14490.70" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="PkH-5L-U5F">
     <device id="retina6_5" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -9,7 +9,23 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Photos View Controller-->
+        <!--Navigation Controller-->
+        <scene sceneID="Hfg-QP-Kto">
+            <objects>
+                <navigationController id="PkH-5L-U5F" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="Zfb-ig-qGd">
+                        <rect key="frame" x="0.0" y="44" width="414" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="Czi-ET-OT4" kind="relationship" relationship="rootViewController" id="QR2-QJ-wxG"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="IiB-Gu-9UZ" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-1494" y="-111"/>
+        </scene>
+        <!--Photos-->
         <scene sceneID="OUx-jz-Xi8">
             <objects>
                 <collectionViewController id="Czi-ET-OT4" customClass="PhotosViewController" customModule="phone_test" customModuleProvider="target" sceneMemberID="viewController">
@@ -64,9 +80,11 @@
                             <outlet property="delegate" destination="Czi-ET-OT4" id="hVF-Ka-JbP"/>
                         </connections>
                     </collectionView>
+                    <navigationItem key="navigationItem" title="Photos" id="cCS-Xa-kaM"/>
                 </collectionViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="3xx-aG-kWZ" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
+            <point key="canvasLocation" x="-743" y="-111"/>
         </scene>
     </scenes>
 </document>
