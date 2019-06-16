@@ -37,6 +37,71 @@ class InMemoryImageCache: ImageCache {
         cache.removeAllObjects()
     }
 }
+
+enum FileSystemCacheError: Error {
+    case cacheExistsButIsAFile(path: String)
+}
+
+class FileSystemCache: ImageCache {
+    private let fileManager: FileManager
+    private let url: URL
+    private let sizeLimit: UInt64
+    private var cacheSize: UInt64 = 0
+
+    init(name: String, sizeLimit: UInt64, on queue: DispatchQueue, fileManager: FileManager = FileManager.default) throws {
+        self.sizeLimit = sizeLimit
+        self.fileManager = fileManager
+        
+        
+        let cacheUrl = try fileManager.url(
+            for: .cachesDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        
+        url = cacheUrl
+            .appendingPathComponent("net.vbfox.image-cache", isDirectory: true)
+            .appendingPathComponent(name, isDirectory: true)
+        
+        var isDirectory: ObjCBool = false
+        if !fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+            try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+        } else if !isDirectory.boolValue {
+            throw FileSystemCacheError.cacheExistsButIsAFile(path: url.path)
+        }
+        
+        runCleanupIfNeeded(recomputeSize: true)
+    }
+    
+    func runCleanupIfNeeded(recomputeSize: Bool) throws {
+        if recomputeSize {
+            cacheSize = try getCacheSize()
+        }
+        
+        if cacheSize <= sizeLimit {
+            return
+        }
+        
+        
+    }
+    
+    private func getCacheSize() throws -> UInt64 {
+        let files = try fileManager.contentsOfDirectory(atPath: url.path)
+        return try files
+            .map { f in
+                url.appendingPathComponent(f)
+            }.reduce(0 as UInt64) { totalSize, url in
+                let attributes = try fileManager.attributesOfItem(atPath: url.path)
+                if let size = attributes[.size] as? UInt64 {
+                    return totalSize + size
+                } else {
+                    return totalSize
+                }
+            }
+    }
+}
+
 /*
 class LoaderWithCache: ImageUrlLoader {
     
