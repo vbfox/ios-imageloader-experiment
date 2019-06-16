@@ -2,21 +2,21 @@
   "Mac" : [
     {
       "name" : "PMKFoundation",
-      "hash" : "80ea6401009fa1f5a6329e97be6a1c604754d83f8b3c9c0c562f13f1d624bd5b",
+      "hash" : "7094aea6d457856e7c59b894861e5955a21d80b3322174e38fa875f0505c132e",
       "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
     }
   ],
   "watchOS" : [
     {
       "name" : "PMKFoundation",
-      "hash" : "7b5a9e07010e7273abbc6571d70b297d2ae58b5b4701c34f881607cc2b44c2d8",
+      "hash" : "e51d103241a61dec73ca05528089393ed0fe29115703a396756dcdd6e05e4b0c",
       "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
     }
   ],
   "tvOS" : [
     {
       "name" : "PMKFoundation",
-      "hash" : "d7e16a877877457ab067af71db6acb83abcaee12b367e70ca4358fc90160f997",
+      "hash" : "e99c6a3ddf6a70436f154960976b26494ca07811b02e234045ba248f35b8c80b",
       "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
     }
   ],
@@ -24,7 +24,7 @@
   "iOS" : [
     {
       "name" : "PMKFoundation",
-      "hash" : "fc7a8afba6109b206e92d48b36b94efe24e78bdf6a3586240d50e031f68ed6ae",
+      "hash" : "0bc85430f617908f493c4438bb7ff1c457165aacdc8f456562025aaa7b5e77f9",
       "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
     }
   ]

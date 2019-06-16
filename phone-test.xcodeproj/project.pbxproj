@@ -25,6 +25,9 @@
 		981C6B1922B578DA008F63A9 /* RandomUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B1822B578DA008F63A9 /* RandomUser.swift */; };
 		981C6B1B22B57904008F63A9 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B1A22B57904008F63A9 /* Utils.swift */; };
 		981C6B1D22B5A56E008F63A9 /* ImageListLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B1C22B5A56E008F63A9 /* ImageListLoader.swift */; };
+		981C6B2322B6E603008F63A9 /* Cache.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B2222B6E603008F63A9 /* Cache.framework */; };
+		981C6B2422B6E60A008F63A9 /* Cache.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B2222B6E603008F63A9 /* Cache.framework */; };
+		981C6B2522B6E60A008F63A9 /* Cache.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B2222B6E603008F63A9 /* Cache.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +56,7 @@
 			files = (
 				981C6B1722B52072008F63A9 /* PMKFoundation.framework in Embed Frameworks */,
 				981C6B1422B5206F008F63A9 /* PromiseKit.framework in Embed Frameworks */,
+				981C6B2522B6E60A008F63A9 /* Cache.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -80,6 +84,7 @@
 		981C6B1822B578DA008F63A9 /* RandomUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomUser.swift; sourceTree = "<group>"; };
 		981C6B1A22B57904008F63A9 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		981C6B1C22B5A56E008F63A9 /* ImageListLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageListLoader.swift; sourceTree = "<group>"; };
+		981C6B2222B6E603008F63A9 /* Cache.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cache.framework; path = Carthage/Build/iOS/Cache.framework; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,10 +92,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				981C6B2322B6E603008F63A9 /* Cache.framework in Frameworks */,
 				981C6B1322B5206F008F63A9 /* PromiseKit.framework in Frameworks */,
 				981C6B1222B51FD2008F63A9 /* PMKFoundation.framework in Frameworks */,
 				981C6B1622B52072008F63A9 /* PMKFoundation.framework in Frameworks */,
 				981C6B1022B51FC7008F63A9 /* PromiseKit.framework in Frameworks */,
+				981C6B2422B6E60A008F63A9 /* Cache.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,6 +141,7 @@
 		981C6ADC22B4CE12008F63A9 /* phone-test */ = {
 			isa = PBXGroup;
 			children = (
+				981C6B2222B6E603008F63A9 /* Cache.framework */,
 				981C6B0F22B51FC7008F63A9 /* PromiseKit.framework */,
 				981C6B1122B51FD2008F63A9 /* PMKFoundation.framework */,
 				981C6ADD22B4CE12008F63A9 /* AppDelegate.swift */,
@@ -487,6 +495,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
 				);
 				INFOPLIST_FILE = "phone-test/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -509,6 +518,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Carthage/Build/iOS",
+					"$(PROJECT_DIR)/Carthage/Build/Mac",
 				);
 				INFOPLIST_FILE = "phone-test/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (

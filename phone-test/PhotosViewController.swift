@@ -13,16 +13,17 @@ final class PhotosViewController: UICollectionViewController {
         super.viewDidLoad()
 
         URLCache.shared.removeAllCachedResponses()
-        self.startLoadingResults();
+        let imageCache = try! CacheImageCache.init(name: "Photos", sizeLimit: 10 * 1024 * 1024)
+        self.startLoadingResults(imageCache: imageCache);
     }
    
-    func startLoadingResults() {
+    func startLoadingResults(imageCache: ImageCache) {
         firstly {
             RandomUser.get(resultCount: 500)
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init())
+            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init(), imageCache: imageCache)
             self.loader?.imageFinished = self.onImageFinishedLoading
             self.collectionView!.reloadData()
         }.catch {

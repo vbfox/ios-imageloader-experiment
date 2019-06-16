@@ -1,0 +1,27 @@
+{
+  "Mac" : [
+    {
+      "name" : "Cache",
+      "hash" : "59469a2632f537b4790f2bd7ea1d2e910e828a7565ec543237f113270eaa358d",
+      "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
+    }
+  ],
+  "watchOS" : [
+
+  ],
+  "tvOS" : [
+    {
+      "name" : "Cache",
+      "hash" : "2c4d02cb9a907ffe14111dc24511e83105468105a9c56ea3c3f4bfdbc92b7ac8",
+      "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
+    }
+  ],
+  "commitish" : "5.2.0",
+  "iOS" : [
+    {
+      "name" : "Cache",
+      "hash" : "c056da21eddb64f93d237c212d17c27aab68ac79d9d349e565b8842852788e83",
+      "swiftToolchainVersion" : "5.0.1 (swiftlang-1001.0.82.4 clang-1001.0.46.5)"
+    }
+  ]
+}

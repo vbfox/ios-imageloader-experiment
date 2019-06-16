@@ -1,12 +1,7 @@
 import UIKit
 import PromiseKit
 import PMKFoundation
-
-enum LoadingState {
-    case notLoaded
-    case loading
-    case finished
-}
+import Cache
 
 enum ImageLoadingError: Error {
     case invalidSate
@@ -17,20 +12,22 @@ protocol ImageUrlLoader {
 }
 
 protocol ImageCache {
-    func add(url: URL, image: UIImage)
-    func tryGet(url: URL) -> UIImage?
+    func add(url: URL, image: UIImage) -> Promise<Void>
+    func tryGet(url: URL) -> Promise<UIImage?>
     func clear()
 }
 
 class InMemoryImageCache: ImageCache {
     private var cache = NSCache<NSString, UIImage>()
     
-    func add(url: URL, image: UIImage ) {
+    func add(url: URL, image: UIImage) -> Promise<Void> {
         cache.setObject(image, forKey: url.absoluteString as NSString)
+        return Promise<Void>.value(())
     }
     
-    func tryGet(url: URL) -> UIImage? {
-        return cache.object(forKey: url.absoluteString as NSString)
+    func tryGet(url: URL) -> Promise<UIImage?> {
+        let value = cache.object(forKey: url.absoluteString as NSString)
+        return Promise.value(value)
     }
     
     func clear() {
@@ -42,71 +39,58 @@ enum FileSystemCacheError: Error {
     case cacheExistsButIsAFile(path: String)
 }
 
-class FileSystemCache: ImageCache {
-    private let fileManager: FileManager
-    private let url: URL
-    private let sizeLimit: UInt64
-    private var cacheSize: UInt64 = 0
+class CacheImageCache: ImageCache {
+    private let storage: Storage<UIImage>
+    
+    init(name: String, sizeLimit: UInt) throws {
+        let diskConfig = DiskConfig(name: "net.vbfox.image-loader.\(name)", maxSize: sizeLimit)
+        let memoryConfig = MemoryConfig(expiry: .never, countLimit: 10, totalCostLimit: 10)
 
-    init(name: String, sizeLimit: UInt64, on queue: DispatchQueue, fileManager: FileManager = FileManager.default) throws {
-        self.sizeLimit = sizeLimit
-        self.fileManager = fileManager
-        
-        
-        let cacheUrl = try fileManager.url(
-            for: .cachesDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
+        storage = try Storage(
+            diskConfig: diskConfig,
+            memoryConfig: memoryConfig,
+            transformer: TransformerFactory.forImage()
         )
         
-        url = cacheUrl
-            .appendingPathComponent("net.vbfox.image-cache", isDirectory: true)
-            .appendingPathComponent(name, isDirectory: true)
-        
-        var isDirectory: ObjCBool = false
-        if !fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) {
-            try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
-        } else if !isDirectory.boolValue {
-            throw FileSystemCacheError.cacheExistsButIsAFile(path: url.path)
-        }
-        
-        runCleanupIfNeeded(recomputeSize: true)
+        storage.async.removeExpiredObjects { _ in }
     }
     
-    func runCleanupIfNeeded(recomputeSize: Bool) throws {
-        if recomputeSize {
-            cacheSize = try getCacheSize()
-        }
+    func add(url: URL, image: UIImage) -> Promise<Void> {
+        let (promise, resolver) = Promise<Void>.pending()
         
-        if cacheSize <= sizeLimit {
-            return
-        }
-        
-        
-    }
-    
-    private func getCacheSize() throws -> UInt64 {
-        let files = try fileManager.contentsOfDirectory(atPath: url.path)
-        return try files
-            .map { f in
-                url.appendingPathComponent(f)
-            }.reduce(0 as UInt64) { totalSize, url in
-                let attributes = try fileManager.attributesOfItem(atPath: url.path)
-                if let size = attributes[.size] as? UInt64 {
-                    return totalSize + size
-                } else {
-                    return totalSize
-                }
+        storage.async.setObject(image, forKey: url.absoluteString) { result in
+            switch result {
+            case .value:
+                resolver.fulfill(())
+            case .error(let err):
+                resolver.reject(err)
             }
+        }
+        
+        return promise
+    }
+    
+    func tryGet(url: URL) -> Promise<UIImage?> {
+        let (promise, resolver) = Promise<UIImage?>.pending()
+        
+        storage.async.object(forKey: url.absoluteString) { result in
+            switch result {
+            case .value(let image):
+                resolver.fulfill(image)
+            case .error(let err):
+                print(err)
+                resolver.fulfill(.none)
+            }
+        }
+        
+        return promise
+    }
+    
+    func clear() {
+        try! storage.removeAll()
     }
 }
 
-/*
-class LoaderWithCache: ImageUrlLoader {
-    
-}
-*/
 class ImageUrlSessionLoader: ImageUrlLoader {
     init() {
     }
@@ -129,37 +113,81 @@ class ImageUrlSessionLoader: ImageUrlLoader {
     }
 }
 
+enum LoadingState {
+    case notLoaded
+    case loading
+    case finished
+}
+
 class ImageToLoad {
     private(set) var index: Int
     let url: URL
     let promise: Promise<UIImage>
+    private let cacheLoading: Promise<UIImage?>
     private(set) var state: LoadingState
     private var resolver: Resolver<UIImage>
     private let imageLoader: ImageUrlLoader
+    private let imageCache: ImageCache
+    private let loadingRequested: Bool = false
+    private let queue: DispatchQueue
     
-    init(index: Int, url: URL, imageLoader: ImageUrlLoader) {
+    init(index: Int, url: URL, imageLoader: ImageUrlLoader, imageCache: ImageCache, queue: DispatchQueue) {
         self.index = index
         self.url = url
         self.imageLoader = imageLoader
+        self.queue = queue
+        self.imageCache = imageCache
         self.state = LoadingState.notLoaded
         
         let (promise, resolver) = Promise<UIImage>.pending()
         self.promise = promise
         self.resolver = resolver
+        
+        cacheLoading = imageCache.tryGet(url: url)
+        
+        firstly {
+            cacheLoading
+        }.done(on: queue) { (image: UIImage?) in
+            if let foundImage = image {
+                print("Found in cache: \(url)")
+                self.resolver.fulfill(foundImage)
+                self.state = LoadingState.finished
+            } else {
+                print("NOT found in cache: \(url)")
+            }
+        }.cauterize()
     }
     
-    func startLoading(on queue: DispatchQueue) throws -> Promise<UIImage> {
+    private func loadFromNetworkAndCache() -> Promise<UIImage> {
+        return firstly {
+            self.imageLoader.loadImageFrom(self.url, on: self.queue)
+        }.then { image -> Promise<UIImage> in
+            // Don't wait for the add to finish, if it fail we can't do much
+            self.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
+            return Promise<UIImage>.value(image)
+        }
+    }
+    
+    func startLoading() throws -> Promise<UIImage> {
         if state != LoadingState.notLoaded {
-            throw ImageLoadingError.invalidSate
+            return self.promise
         }
         
         state = LoadingState.loading
         
         firstly {
-            imageLoader.loadImageFrom(url, on: queue)
-            }.pipe { result in
+            return self.cacheLoading
+        }.then { cacheResult -> Promise<UIImage> in
+            if let cachedImage = cacheResult {
+                return Promise<UIImage>.value(cachedImage)
+            } else {
+                return self.loadFromNetworkAndCache()
+            }
+        }.pipe { result in
+            if self.state == LoadingState.loading {
                 self.resolver.resolve(result)
                 self.state = LoadingState.finished
+            }
         }
         
         return self.promise
@@ -178,8 +206,13 @@ class ImageListLoader {
     private(set) var promises: [Promise<UIImage>] = []
     var imageFinished: ((Int) -> ())?
     
-    init(urls: [URL], imageLoader: ImageUrlLoader) {
-        all = urls.enumerated().map { (i, url) in ImageToLoad.init(index: i, url: url, imageLoader: imageLoader) }
+    init(urls: [URL], imageLoader: ImageUrlLoader, imageCache: ImageCache) {
+        all =
+            urls
+            .enumerated()
+            .map { (i, url) in
+                ImageToLoad.init(index: i, url: url, imageLoader: imageLoader, imageCache: imageCache, queue: imageProcessQueue)
+            }
         remaining = all
         promises = remaining.map { toLoad in toLoad.promise }
 
@@ -216,7 +249,7 @@ class ImageListLoader {
         print("Starting \(toLoad.index)")
         inProgress += 1
         firstly {
-            try! toLoad.startLoading(on: imageProcessQueue)
+            try! toLoad.startLoading()
         }.done(on: mainQueue) { _ in
             loadingFinished()
         }.catch(on: mainQueue) {
