@@ -33,7 +33,7 @@ class RandomUser
 {
     static let bgq = DispatchQueue.global(qos: .userInitiated)
     
-    static func get(resultCount: Int = 500, bgQueue: DispatchObject? = bgq) -> Promise<RandomUserResponse> {
+    static func get(resultCount: Int = 500, progress: ProgressReport? = .none, bgQueue: DispatchObject? = bgq) -> Promise<RandomUserResponse> {
         
         func createRequest() -> URLRequest {
             let url = URL(string: "https://randomuser.me/api/?results=\(resultCount)&seed=zenly&inc=name,picture&noinfo")!
@@ -43,8 +43,13 @@ class RandomUser
             return request
         }
         
+        var session = URLSession.shared
+        if let progress = progress {
+            session = sessionWithProgressReport(withReport: progress)
+        }
+        
         return firstly {
-            URLSession.shared.dataTask(.promise, with: createRequest()).validate()
+            session.dataTask(.promise, with: createRequest()).validate()
             }.compactMap(on: bgq) {
                 try JSONDecoder().decode(RandomUserResponse.self, from: $0.data)
         }

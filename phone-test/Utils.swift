@@ -31,3 +31,41 @@ extension URLSession {
         return (task!, promise)
     }
 }
+
+protocol ProgressReport {
+    func progressChanged(current: Int, total: Int)
+}
+
+private class SessionWithProgressReport: NSObject, URLSessionDataDelegate {
+    private(set) var session: URLSession!
+    private let report: ProgressReport
+    private var expectedContentLength = 0
+    private var contentLength = 0
+    
+    init(report: ProgressReport) {
+        self.report = report
+        super.init()
+        
+        session = Foundation.URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        contentLength += data.count
+        report.progressChanged(current: contentLength, total: expectedContentLength)
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: (URLSession.ResponseDisposition) -> Void) {
+        expectedContentLength = Int(response.expectedContentLength)
+        report.progressChanged(current: 0, total: expectedContentLength)
+        completionHandler(URLSession.ResponseDisposition.allow)
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        report.progressChanged(current: expectedContentLength, total: expectedContentLength)
+    }
+}
+
+func sessionWithProgressReport(withReport report: ProgressReport) -> URLSession {
+    let session = SessionWithProgressReport.init(report: report)
+    return session.session
+}

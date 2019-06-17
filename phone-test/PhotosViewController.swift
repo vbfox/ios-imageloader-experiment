@@ -36,12 +36,16 @@ final class PhotosViewController: UICollectionViewController {
         startLoadingResults()
     }
     
-    private func startLoadingResults() {
+    private func clearResults() {
         users = []
         self.loader?.imageFinished = .none
         loader = .none
         cells.removeAll()
         collectionView!.reloadData()
+    }
+    
+    private func startLoadingResults() {
+        clearResults()
         
         firstly {
             RandomUser.get(resultCount: 500)
