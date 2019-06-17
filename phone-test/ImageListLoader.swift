@@ -144,16 +144,19 @@ class ImageToLoad {
         self.resolver = resolver
         
         cacheLoading = imageCache.tryGet(url: url)
-        
+        loadFromCache()
+    }
+    
+    private func loadFromCache() {
         firstly {
             cacheLoading
         }.done(on: queue) { (image: UIImage?) in
             if let foundImage = image {
-                print("Found in cache: \(url)")
+                print("Found in cache: \(self.url)")
                 self.resolver.fulfill(foundImage)
                 self.state = LoadingState.finished
             } else {
-                print("NOT found in cache: \(url)")
+                print("NOT found in cache: \(self.url)")
             }
         }.cauterize()
     }
@@ -216,6 +219,12 @@ class ImageListLoader {
         remaining = all
         promises = remaining.map { toLoad in toLoad.promise }
 
+        for image in all {
+            firstly { image.promise }
+                .done { _ in self.callImageFinished(index: image.index) }
+                .cauterize()
+        }
+        
         mainQueue.async {
             self.fill()
         }
@@ -227,6 +236,14 @@ class ImageListLoader {
         }
     }
     
+    private func callImageFinished(index: Int) {
+        if imageFinished != nil {
+            DispatchQueue.main.async {
+                self.imageFinished?(index)
+            }
+        }
+    }
+    
     private func addInProgress() {
         if remaining.count == 0 {
             return
@@ -234,16 +251,18 @@ class ImageListLoader {
         
         let toLoad = remaining[0]
         remaining.remove(at: 0)
+
+        if toLoad.state == LoadingState.finished {
+            // This can happen when the cache was hit, the rest of the method would work in this case but
+            // it's faster to avoid going back to the dispatcher and immediately try the next image instead
+            addInProgress()
+            return
+        }
         
         func loadingFinished() {
             inProgress -= 1
             print("Finished \(toLoad.index)")
             fill()
-            if imageFinished != nil {
-                DispatchQueue.main.async {
-                    self.imageFinished?(toLoad.index)
-                }
-            }
         }
         
         print("Starting \(toLoad.index)")
