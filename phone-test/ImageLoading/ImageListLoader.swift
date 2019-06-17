@@ -12,6 +12,16 @@ enum LoadingState {
     case finished
 }
 
+typealias TransformImage = (UIImage) -> UIImage
+
+private struct LoadingParameters {
+    let imageLoader: ImageUrlLoader
+    let imageCache: ImageCache
+    let serialQueue: DispatchQueue
+    let parallelQueue: DispatchQueue
+    let transform: TransformImage?
+}
+
 class ImageToLoad {
     private(set) var index: Int
     let url: URL
@@ -19,31 +29,35 @@ class ImageToLoad {
     private let cacheLoading: Promise<UIImage?>
     private(set) var state: LoadingState
     private var resolver: Resolver<UIImage>
-    private let imageLoader: ImageUrlLoader
-    private let imageCache: ImageCache
     private let loadingRequested: Bool = false
-    private let queue: DispatchQueue
+    private let params: LoadingParameters
     
-    init(index: Int, url: URL, imageLoader: ImageUrlLoader, imageCache: ImageCache, queue: DispatchQueue) {
+    fileprivate init(index: Int, url: URL, params: LoadingParameters) {
         self.index = index
         self.url = url
-        self.imageLoader = imageLoader
-        self.queue = queue
-        self.imageCache = imageCache
+        self.params = params
         self.state = LoadingState.notLoaded
         
         let (promise, resolver) = Promise<UIImage>.pending()
         self.promise = promise
         self.resolver = resolver
         
-        cacheLoading = imageCache.tryGet(url: url)
+        cacheLoading = params.imageCache.tryGet(url: url)
         loadFromCache()
     }
     
     private func loadFromCache() {
         firstly {
             cacheLoading
-        }.done(on: queue) { (image: UIImage?) in
+        }
+        .map(on: params.parallelQueue) { image -> UIImage? in
+            if let foundImage = image {
+                return self.runTransform(foundImage)
+            } else {
+                return .none
+            }
+        }
+        .done(on: params.serialQueue) { (image: UIImage?) in
             if let foundImage = image {
                 print("Found in cache: \(self.url)")
                 self.resolver.fulfill(foundImage)
@@ -51,16 +65,31 @@ class ImageToLoad {
             } else {
                 print("NOT found in cache: \(self.url)")
             }
-        }.cauterize()
+        }
+        .catch {
+            print("Load from cache error: \($0)")
+        }
     }
     
     private func loadFromNetworkAndCache() -> Promise<UIImage> {
         return firstly {
-            self.imageLoader.loadImageFrom(self.url, on: self.queue)
-        }.then { image -> Promise<UIImage> in
+            self.params.imageLoader.loadImageFrom(self.url, on: self.params.parallelQueue)
+        }
+        .then(on: params.parallelQueue) { image -> Promise<UIImage> in
             // Don't wait for the add to finish, if it fail we can't do much
-            self.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
+            self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
             return Promise<UIImage>.value(image)
+        }
+        .map(on: params.parallelQueue) { image -> UIImage in
+            return self.runTransform(image)
+        }
+    }
+    
+    func runTransform(_ image: UIImage) -> UIImage {
+        if let transform = self.params.transform {
+            return transform(image)
+        } else {
+            return image
         }
     }
     
@@ -73,13 +102,15 @@ class ImageToLoad {
         
         firstly {
             return self.cacheLoading
-        }.then { cacheResult -> Promise<UIImage> in
+        }
+        .then(on: params.serialQueue) { cacheResult -> Promise<UIImage> in
             if let cachedImage = cacheResult {
                 return Promise<UIImage>.value(cachedImage)
             } else {
                 return self.loadFromNetworkAndCache()
             }
-        }.pipe { result in
+        }
+        .pipe { result in
             if self.state == LoadingState.loading {
                 self.resolver.resolve(result)
                 self.state = LoadingState.finished
@@ -102,12 +133,18 @@ class ImageListLoader {
     private(set) var promises: [Promise<UIImage>] = []
     var imageFinished: ((Int) -> ())?
     
-    init(urls: [URL], imageLoader: ImageUrlLoader, imageCache: ImageCache) {
+    init(urls: [URL], transform: TransformImage? = .none, imageLoader: ImageUrlLoader, imageCache: ImageCache) {
+        let params = LoadingParameters(imageLoader: imageLoader,
+                                       imageCache: imageCache,
+                                       serialQueue: mainQueue,
+                                       parallelQueue: imageProcessQueue,
+                                       transform: transform)
+        
         all =
             urls
             .enumerated()
             .map { (i, url) in
-                ImageToLoad.init(index: i, url: url, imageLoader: imageLoader, imageCache: imageCache, queue: imageProcessQueue)
+                ImageToLoad(index: i, url: url, params: params)
             }
         remaining = all
         promises = remaining.map { toLoad in toLoad.promise }

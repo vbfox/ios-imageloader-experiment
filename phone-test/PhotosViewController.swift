@@ -75,17 +75,13 @@ final class PhotosViewController: UICollectionViewController {
         showSpinnerView()
         
         firstly {
-            RandomUser.get(resultCount: 5000) {
-                x, y in
-                print("PROGRESS \(x) \(y)")
-                self.progressChanged(current: x, total: y)
-            }
+            RandomUser.get(resultCount: 5000, reportProgressTo: self.progressChanged)
         }.ensure {
             self.hideSpinnerAndProgressView()
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache)
+            self.loader = ImageListLoader.init(urls: urls, transform: self.transformImage, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache)
             self.loader?.imageFinished = self.onImageFinishedLoading
             self.collectionView!.reloadData()
         }.catch {
@@ -93,6 +89,11 @@ final class PhotosViewController: UICollectionViewController {
         }
     }
 
+    func transformImage(image: UIImage) -> UIImage {
+        // Beware transformations run on a separate queue
+        return image.rounded(radius: 20)
+    }
+    
     func progressChanged(current: Int, total: Int) {
         let percent = Float(current) / Float(total)
         DispatchQueue.main.async {
