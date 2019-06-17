@@ -13,7 +13,7 @@ class RandomUser
         -> Promise<RandomUserResponse> {
         
         func createRequest() -> URLRequest {
-            let url = URL(string: "https://randomuser.me/api/?results=\(resultCount)&seed=zenly&inc=name,picture&noinfo")!
+            let url = URL(string: "https://randomuser.me/api/?results=\(resultCount)&inc=name,picture&noinfo")!
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.addValue("application/json", forHTTPHeaderField: "Accept")
