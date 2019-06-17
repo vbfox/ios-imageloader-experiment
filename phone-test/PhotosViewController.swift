@@ -64,7 +64,6 @@ final class PhotosViewController: UICollectionViewController {
     
     private func clearResults() {
         users = []
-        self.loader?.imageFinished = .none
         loader = .none
         cells.removeAll()
         collectionView!.reloadData()
@@ -81,8 +80,7 @@ final class PhotosViewController: UICollectionViewController {
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageListLoader.init(urls: urls, transform: self.transformImage, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache)
-            self.loader?.imageFinished = self.onImageFinishedLoading
+            self.loader = ImageListLoader.init(urls: urls, transform: self.transformImage, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache, imageLoaded: self.onImageFinishedLoading)
             self.collectionView!.reloadData()
         }.catch {
             print($0)
@@ -108,7 +106,7 @@ final class PhotosViewController: UICollectionViewController {
         }
     }
     
-    private func onImageFinishedLoading(index: Int) {
+    private func onImageFinishedLoading(index: Int, image: UIImage?) {
         // We can't use visibleCells as it's missing loaded cells that are out of screen, and cells can't
         // subscribe to their promises as tehre is not way to unsubscribe also looping a few elements and
         // comparing integers is cheap (We're on the main thread)

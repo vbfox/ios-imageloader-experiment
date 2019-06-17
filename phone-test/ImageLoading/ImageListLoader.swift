@@ -20,6 +20,7 @@ private struct LoadingParameters {
     let serialQueue: DispatchQueue
     let parallelQueue: DispatchQueue
     let transform: TransformImage?
+    let imageLoaded: ImageLoaded
 }
 
 class ImageToLoad {
@@ -43,6 +44,7 @@ class ImageToLoad {
         self.resolver = resolver
         
         cacheLoading = params.imageCache.tryGet(url: url)
+        firstly { promise }.done { image in params.imageLoaded(self.index, image) }.cauterize()
         loadFromCache()
     }
     
@@ -85,7 +87,7 @@ class ImageToLoad {
         }
     }
     
-    func runTransform(_ image: UIImage) -> UIImage {
+    private func runTransform(_ image: UIImage) -> UIImage {
         if let transform = self.params.transform {
             return transform(image)
         } else {
@@ -121,6 +123,8 @@ class ImageToLoad {
     }
 }
 
+typealias ImageLoaded = (Int, UIImage?) -> Void
+
 class ImageListLoader {
     private var inProgress: Int = 0
     private let minInProgress: Int = 20
@@ -131,15 +135,15 @@ class ImageListLoader {
     private var remaining: [ImageToLoad] = []
     private let currentIndex: Int = 0
     private(set) var promises: [Promise<UIImage>] = []
-    var imageFinished: ((Int) -> ())?
     
-    init(urls: [URL], transform: TransformImage? = .none, imageLoader: ImageUrlLoader, imageCache: ImageCache) {
+    init(urls: [URL], transform: TransformImage? = .none, imageLoader: ImageUrlLoader, imageCache: ImageCache, imageLoaded: @escaping ImageLoaded) {
         let params = LoadingParameters(imageLoader: imageLoader,
                                        imageCache: imageCache,
                                        serialQueue: mainQueue,
                                        parallelQueue: imageProcessQueue,
-                                       transform: transform)
-        
+                                       transform: transform,
+                                       imageLoaded: imageLoaded)
+
         all =
             urls
             .enumerated()
@@ -148,12 +152,6 @@ class ImageListLoader {
             }
         remaining = all
         promises = remaining.map { toLoad in toLoad.promise }
-
-        for image in all {
-            firstly { image.promise }
-                .done { _ in self.callImageFinished(index: image.index) }
-                .cauterize()
-        }
         
         mainQueue.async {
             self.fill()
@@ -163,14 +161,6 @@ class ImageListLoader {
     private func fill() {
         while(inProgress < minInProgress && remaining.count > 0) {
             addInProgress()
-        }
-    }
-    
-    private func callImageFinished(index: Int) {
-        if imageFinished != nil {
-            DispatchQueue.main.async {
-                self.imageFinished?(index)
-            }
         }
     }
     
@@ -223,5 +213,12 @@ class ImageListLoader {
                 }
             }
         }
+    }
+    
+    func imageVisible(index: Int) {
+    }
+    
+    func prefetch(index: Int) {
+        
     }
 }
