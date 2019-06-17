@@ -28,6 +28,7 @@
 		981C6B2322B6E603008F63A9 /* Cache.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B2222B6E603008F63A9 /* Cache.framework */; };
 		981C6B2422B6E60A008F63A9 /* Cache.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B2222B6E603008F63A9 /* Cache.framework */; };
 		981C6B2522B6E60A008F63A9 /* Cache.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B2222B6E603008F63A9 /* Cache.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		981C6B2722B83A5A008F63A9 /* DownloadWithProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B2622B83A5A008F63A9 /* DownloadWithProgress.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +86,7 @@
 		981C6B1A22B57904008F63A9 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		981C6B1C22B5A56E008F63A9 /* ImageListLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageListLoader.swift; sourceTree = "<group>"; };
 		981C6B2222B6E603008F63A9 /* Cache.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cache.framework; path = Carthage/Build/iOS/Cache.framework; sourceTree = SOURCE_ROOT; };
+		981C6B2622B83A5A008F63A9 /* DownloadWithProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadWithProgress.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +150,7 @@
 				981C6ADF22B4CE12008F63A9 /* ViewController.swift */,
 				981C6AE122B4CE12008F63A9 /* Main.storyboard */,
 				981C6B1A22B57904008F63A9 /* Utils.swift */,
+				981C6B2622B83A5A008F63A9 /* DownloadWithProgress.swift */,
 				981C6B1822B578DA008F63A9 /* RandomUser.swift */,
 				981C6B1C22B5A56E008F63A9 /* ImageListLoader.swift */,
 				981C6B0B22B4D8B8008F63A9 /* PhotosViewController.swift */,
@@ -315,6 +318,7 @@
 				981C6ADE22B4CE12008F63A9 /* AppDelegate.swift in Sources */,
 				981C6B0E22B51461008F63A9 /* PhotoViewCell.swift in Sources */,
 				981C6B1922B578DA008F63A9 /* RandomUser.swift in Sources */,
+				981C6B2722B83A5A008F63A9 /* DownloadWithProgress.swift in Sources */,
 				981C6B1B22B57904008F63A9 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -24,6 +24,32 @@ final class PhotosViewController: UICollectionViewController {
         imageCache = try! CacheImageCache.init(name: "Photos", sizeLimit: 10 * 1024 * 1024)
         self.startLoadingResults();
     }
+
+    let progressView = UIProgressView(progressViewStyle: .default)
+    let spinnerView = UIActivityIndicatorView(style: .gray)
+    
+    func showSpinnerView() {
+        if spinnerView.superview == .none {
+            self.view.addSubview(spinnerView)
+            spinnerView.hidesWhenStopped = true
+            spinnerView.center = self.view.center
+            spinnerView.startAnimating()
+        }
+    }
+    
+    func showProgressView() {
+        if progressView.superview == .none {
+            self.view.addSubview(progressView)
+            progressView.center = self.view.center
+            progressView.setProgress(0, animated: false)
+        }
+    }
+    
+    func hideSpinnerAndProgressView() {
+        spinnerView.stopAnimating()
+        progressView.removeFromSuperview()
+        spinnerView.removeFromSuperview()
+    }
     
     @objc
     private func clearCaches() {
@@ -46,9 +72,16 @@ final class PhotosViewController: UICollectionViewController {
     
     private func startLoadingResults() {
         clearResults()
+        showSpinnerView()
         
         firstly {
-            RandomUser.get(resultCount: 500)
+            RandomUser.get(resultCount: 5000) {
+                x, y in
+                print("PROGRESS \(x) \(y)")
+                self.progressChanged(current: x, total: y)
+            }
+        }.ensure {
+            self.hideSpinnerAndProgressView()
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
@@ -60,6 +93,20 @@ final class PhotosViewController: UICollectionViewController {
         }
     }
 
+    func progressChanged(current: Int, total: Int) {
+        let percent = Float(current) / Float(total)
+        DispatchQueue.main.async {
+            if total > 0 {
+                if current != total {
+                    self.showProgressView()
+                }
+                self.progressView.setProgress(percent, animated: true)
+            } else {
+                self.showSpinnerView()
+            }
+        }
+    }
+    
     private func onImageFinishedLoading(index: Int) {
         // We can't use visibleCells as it's missing loaded cells that are out of screen, and cells can't
         // subscribe to their promises as tehre is not way to unsubscribe also looping a few elements and

@@ -103,7 +103,7 @@ class ImageUrlSessionLoader: ImageUrlLoader {
         }
         
         let req = makeImageRequest()
-        let (_, p) = URLSession.shared.dataTaskAndPromise(with: req)
+        let p = URLSession.shared.dataTask(.promise, with: req)
         
         return firstly {
             p.validate()
@@ -244,7 +244,7 @@ class ImageListLoader {
         }
     }
     
-    private func addInProgress() {
+    private func addInProgress(recursionCount: Int = 0) {
         if remaining.count == 0 {
             return
         }
@@ -252,10 +252,11 @@ class ImageListLoader {
         let toLoad = remaining[0]
         remaining.remove(at: 0)
 
-        if toLoad.state == LoadingState.finished {
+        if (recursionCount < 100) && (toLoad.state == LoadingState.finished) {
             // This can happen when the cache was hit, the rest of the method would work in this case but
             // it's faster to avoid going back to the dispatcher and immediately try the next image instead
-            addInProgress()
+            // We can't always do that as we might stackoverflow, so there is a recursion limit
+            addInProgress(recursionCount: recursionCount + 1)
             return
         }
         
