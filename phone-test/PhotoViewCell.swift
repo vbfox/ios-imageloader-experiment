@@ -2,6 +2,7 @@ import UIKit
 import PromiseKit
 
 class PhotoViewCell: UICollectionViewCell {
+    private static let defaultImage = UIImage(named: "user")
     @IBOutlet weak var imageOutlet: UIImageView!
     
     @IBOutlet weak var foo: UILabel!
@@ -15,7 +16,7 @@ class PhotoViewCell: UICollectionViewCell {
         imagePromise = nil
         index = -1
         foo?.text = ""
-        imageOutlet?.image = nil
+        imageOutlet?.image = PhotoViewCell.defaultImage
     }
     
     func showUser(_ user: RandomUserInfo, withImage image: Promise<UIImage>, atIndex index: Int) {
