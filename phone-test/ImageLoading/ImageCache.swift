@@ -7,24 +7,7 @@ protocol ImageCache {
     func add(url: URL, image: UIImage) -> Promise<Void>
     func tryGet(url: URL) -> Promise<UIImage?>
     func clear()
-}
-
-class InMemoryImageCache: ImageCache {
-    private var cache = NSCache<NSString, UIImage>()
-    
-    func add(url: URL, image: UIImage) -> Promise<Void> {
-        cache.setObject(image, forKey: url.absoluteString as NSString)
-        return Promise<Void>.value(())
-    }
-    
-    func tryGet(url: URL) -> Promise<UIImage?> {
-        let value = cache.object(forKey: url.absoluteString as NSString)
-        return Promise.value(value)
-    }
-    
-    func clear() {
-        cache.removeAllObjects()
-    }
+    func contains(url: URL) -> Bool
 }
 
 enum FileSystemCacheError: Error {
@@ -76,6 +59,10 @@ class CacheImageCache: ImageCache {
         }
         
         return promise
+    }
+    
+    func contains(url: URL) -> Bool {
+        return try! storage.existsObject(forKey: url.absoluteString)
     }
     
     func clear() {

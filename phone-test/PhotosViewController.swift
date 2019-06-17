@@ -112,7 +112,7 @@ final class PhotosViewController: UICollectionViewController {
         // comparing integers is cheap (We're on the main thread)
         for cell in cells {
             if cell.index == index {
-                cell.refreshPhoto()
+                cell.showImage(image)
             }
         }
     }
@@ -133,15 +133,10 @@ extension PhotosViewController
         cells.insert(cell)
         
         let photoIndex = indexPath.row
-        let image = self.loader!.promises[photoIndex]
         let user = self.users[photoIndex]
-        
-        if image.result == nil {
-            // The image isn't there yet, try to start loading it immediately
-            loader!.prioritize(index: photoIndex, isPrefetch: false)
-        }
-        
-        cell.showUser(user, withImage: image, atIndex: photoIndex)
+        loader!.imageVisible(photoIndex)
+
+        cell.showUser(user, atIndex: photoIndex)
         
         return cell
     }
@@ -150,8 +145,7 @@ extension PhotosViewController
 extension PhotosViewController: UICollectionViewDataSourcePrefetching {
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
         for indexPath in indexPaths {
-            // Prioritize it's download but don't force start
-            loader!.prioritize(index: indexPath.row, isPrefetch: true)
+            loader!.prefetch(indexPath.row)
         }
     }
     

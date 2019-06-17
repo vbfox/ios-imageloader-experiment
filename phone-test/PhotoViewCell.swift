@@ -7,40 +7,26 @@ class PhotoViewCell: UICollectionViewCell {
     
     @IBOutlet weak var foo: UILabel!
     
-    private var imagePromise: Promise<UIImage>?
     private(set) var index: Int = -1
     
     override func prepareForReuse() {
         super.prepareForReuse()
         
-        imagePromise = nil
         index = -1
         foo?.text = ""
         imageOutlet?.image = PhotoViewCell.defaultImage
     }
     
-    func showUser(_ user: RandomUserInfo, withImage image: Promise<UIImage>, atIndex index: Int) {
+    func showUser(_ user: RandomUserInfo, atIndex index: Int) {
         self.index = index
-        imagePromise = image
         foo.text = user.name!.toString()
-        showImage(image)
     }
     
-    private func showImage(_ image: Promise<UIImage>) {
-        switch image.result {
-        case nil:
-            break
-        case .fulfilled(let finalImage)?:
-            self.imageOutlet.image = finalImage
-        case .rejected?:
+    func showImage(_ image: UIImage?) {
+        if let image = image {
+            self.imageOutlet.image = image
+        } else {
             backgroundColor = .red
         }
-    }
-    
-    func refreshPhoto() {
-        if imagePromise!.result == nil {
-            print("BOOOOOOOOOOOOOOOOOOOOOM")
-        }
-        showImage(imagePromise!)
     }
 }

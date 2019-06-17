@@ -26,10 +26,8 @@ private struct LoadingParameters {
 class ImageToLoad {
     private(set) var index: Int
     let url: URL
-    let promise: Promise<UIImage>
-    private let cacheLoading: Promise<UIImage?>
-    private(set) var state: LoadingState
-    private var resolver: Resolver<UIImage>
+    private var loading = false
+    private var loadingPromise: Promise<Void>? = .none
     private let loadingRequested: Bool = false
     private let params: LoadingParameters
     
@@ -37,20 +35,11 @@ class ImageToLoad {
         self.index = index
         self.url = url
         self.params = params
-        self.state = LoadingState.notLoaded
-        
-        let (promise, resolver) = Promise<UIImage>.pending()
-        self.promise = promise
-        self.resolver = resolver
-        
-        cacheLoading = params.imageCache.tryGet(url: url)
-        firstly { promise }.done { image in params.imageLoaded(self.index, image) }.cauterize()
-        loadFromCache()
     }
     
-    private func loadFromCache() {
-        firstly {
-            cacheLoading
+    private func loadFromCache() -> Promise<UIImage?> {
+        return firstly {
+            self.params.imageCache.tryGet(url: url)
         }
         .map(on: params.parallelQueue) { image -> UIImage? in
             if let foundImage = image {
@@ -59,17 +48,9 @@ class ImageToLoad {
                 return .none
             }
         }
-        .done(on: params.serialQueue) { (image: UIImage?) in
-            if let foundImage = image {
-                print("Found in cache: \(self.url)")
-                self.resolver.fulfill(foundImage)
-                self.state = LoadingState.finished
-            } else {
-                print("NOT found in cache: \(self.url)")
-            }
-        }
-        .catch {
-            print("Load from cache error: \($0)")
+        .recover { (error: Error) -> Promise<UIImage?> in
+            print("Load from cache error: \(error)")
+            return Promise.value(.none)
         }
     }
     
@@ -95,15 +76,18 @@ class ImageToLoad {
         }
     }
     
-    func startLoading() throws -> Promise<UIImage> {
-        if state != LoadingState.notLoaded {
-            return self.promise
+    func startLoading() -> Promise<Void> {
+        if loading {
+            return loadingPromise!
         }
         
-        state = LoadingState.loading
+        loading = true
+        
+        let (promise, resolver) = Promise<Void>.pending()
+        self.loadingPromise = .some(promise)
         
         firstly {
-            return self.cacheLoading
+            self.loadFromCache()
         }
         .then(on: params.serialQueue) { cacheResult -> Promise<UIImage> in
             if let cachedImage = cacheResult {
@@ -112,14 +96,28 @@ class ImageToLoad {
                 return self.loadFromNetworkAndCache()
             }
         }
-        .pipe { result in
-            if self.state == LoadingState.loading {
-                self.resolver.resolve(result)
-                self.state = LoadingState.finished
-            }
+        .ensure(on: params.serialQueue) {
+            self.loading = false
+            self.loadingPromise = .none
+            resolver.fulfill(())
+        }
+        .done(on: params.serialQueue) {
+            self.params.imageLoaded(self.index, $0)
+        }
+        .catch {
+            print("Image loading failed: \($0)")
+            self.params.imageLoaded(self.index, .none)
         }
         
-        return self.promise
+        return promise
+    }
+    
+    func preload() -> Promise<Void> {
+        if (params.imageCache.contains(url: url)) {
+            return Promise<Void>.value(())
+        }
+        
+        return startLoading()
     }
 }
 
@@ -134,15 +132,19 @@ class ImageListLoader {
     private var all: [ImageToLoad] = []
     private var remaining: [ImageToLoad] = []
     private let currentIndex: Int = 0
-    private(set) var promises: [Promise<UIImage>] = []
     
     init(urls: [URL], transform: TransformImage? = .none, imageLoader: ImageUrlLoader, imageCache: ImageCache, imageLoaded: @escaping ImageLoaded) {
+        let imageLoadedOnMain = { (index: Int, image: UIImage?) in
+            DispatchQueue.main.async {
+                imageLoaded(index, image)
+            }
+        }
         let params = LoadingParameters(imageLoader: imageLoader,
                                        imageCache: imageCache,
                                        serialQueue: mainQueue,
                                        parallelQueue: imageProcessQueue,
                                        transform: transform,
-                                       imageLoaded: imageLoaded)
+                                       imageLoaded: imageLoadedOnMain)
 
         all =
             urls
@@ -151,7 +153,6 @@ class ImageListLoader {
                 ImageToLoad(index: i, url: url, params: params)
             }
         remaining = all
-        promises = remaining.map { toLoad in toLoad.promise }
         
         mainQueue.async {
             self.fill()
@@ -164,21 +165,13 @@ class ImageListLoader {
         }
     }
     
-    private func addInProgress(recursionCount: Int = 0) {
+    private func addInProgress() {
         if remaining.count == 0 {
             return
         }
         
         let toLoad = remaining[0]
         remaining.remove(at: 0)
-
-        if (recursionCount < 100) && (toLoad.state == LoadingState.finished) {
-            // This can happen when the cache was hit, the rest of the method would work in this case but
-            // it's faster to avoid going back to the dispatcher and immediately try the next image instead
-            // We can't always do that as we might stackoverflow, so there is a recursion limit
-            addInProgress(recursionCount: recursionCount + 1)
-            return
-        }
         
         func loadingFinished() {
             inProgress -= 1
@@ -189,7 +182,7 @@ class ImageListLoader {
         print("Starting \(toLoad.index)")
         inProgress += 1
         firstly {
-            try! toLoad.startLoading()
+            toLoad.preload()
         }.done(on: mainQueue) { _ in
             loadingFinished()
         }.catch(on: mainQueue) {
@@ -199,26 +192,11 @@ class ImageListLoader {
         }
     }
     
-    func prioritize(index: Int, isPrefetch: Bool) {
-        mainQueue.async {
-            let task = self.all[index]
-            if task.state == .notLoaded {
-                let indexInRemaining = self.remaining.firstIndex { value in value.index == index }
-                if indexInRemaining != nil {
-                    self.remaining.remove(at: indexInRemaining!)
-                    self.remaining.insert(task, at: 0)
-                    if !isPrefetch && (self.inProgress < self.maxInProgress) {
-                        self.addInProgress()
-                    }
-                }
-            }
-        }
+    func imageVisible(_ index: Int) {
+        all[index].startLoading().cauterize()
     }
     
-    func imageVisible(index: Int) {
-    }
-    
-    func prefetch(index: Int) {
-        
+    func prefetch(_ index: Int) {
+        all[index].preload().cauterize()
     }
 }
