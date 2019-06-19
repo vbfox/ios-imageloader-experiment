@@ -14,7 +14,7 @@ enum LoadingState {
 }
 
 private struct LoadingParameters {
-    let imageLoader: ImageUrlLoader
+    let downloadQueue: ImageDownloadQueue
     let imageCache: ImageCache
     let serialQueue: DispatchQueue
     let parallelQueue: DispatchQueue
@@ -52,19 +52,8 @@ class ImageToLoad {
         }
     }
     
-    private func loadFromNetworkAndCache() -> Promise<UIImage> {
-        return firstly {
-            self.params.imageLoader.loadImageFrom(self.url, on: self.params.parallelQueue)
-        }
-        .then(on: params.parallelQueue) { image -> Promise<UIImage> in
-            // Don't wait for the add to finish, if it fail we can't do much
-            self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
-            return Promise<UIImage>.value(image)
-        }
-    }
-    
     private func download() -> Promise<UIImage> {
-        return params.imageLoader.loadImageFrom(self.url, on: self.params.parallelQueue)
+        return params.downloadQueue.add(url: self.url)
     }
     
     private func addToDiskCache(_ image: UIImage) {
@@ -79,7 +68,7 @@ class ImageToLoad {
         params.imageLoaded(self.index, image)
     }
     
-    func afterLoad(result: Result<UIImage>) {
+    private func afterLoad(result: Result<UIImage>) {
         let requestedTodoWhenLoaded = todoWhenLoaded!
         isLoading = false
         loadingResolver?.fulfill(())
@@ -107,7 +96,7 @@ class ImageToLoad {
         }
     }
     
-    func beginLoading() {
+    private func beginLoading() {
         let (promise, resolver) = Promise<Void>.pending()
         isLoading = true
         loadingPromise = promise
@@ -182,23 +171,24 @@ class ImageToLoad {
 
 typealias ImageLoaded = (Int, UIImage?) -> Void
 
+
+
 class ImageListLoader {
-    private var inProgress: Int = 0
-    private let minInProgress: Int = 20
-    private let maxInProgress: Int = 20
     private let mainQueue = DispatchQueue(label: "net.vbfox.imageloader.main", qos: .userInitiated)
     private let imageProcessQueue = DispatchQueue(label: "net.vbfox.imageloader.process", qos: .background, attributes: .concurrent)
     private var all: [ImageToLoad] = []
-    private var remaining: [ImageToLoad] = []
-    private let currentIndex: Int = 0
+    private let downloadQueue: ImageDownloadQueue
     
     init(urls: [URL], imageLoader: ImageUrlLoader, imageCache: ImageCache, imageLoaded: @escaping ImageLoaded) {
+        downloadQueue = ImageDownloadQueue(loader: imageLoader, maxInProgress: 10)
+        
         let imageLoadedOnMain = { (index: Int, image: UIImage?) in
             DispatchQueue.main.async {
                 imageLoaded(index, image)
             }
         }
-        let params = LoadingParameters(imageLoader: imageLoader,
+        
+        let params = LoadingParameters(downloadQueue: downloadQueue,
                                        imageCache: imageCache,
                                        serialQueue: mainQueue,
                                        parallelQueue: imageProcessQueue,
@@ -210,43 +200,9 @@ class ImageListLoader {
             .map { (i, url) in
                 ImageToLoad(index: i, url: url, params: params)
             }
-        remaining = all
         
-        mainQueue.async {
-            self.fill()
-        }
-    }
-    
-    private func fill() {
-        while(inProgress < minInProgress && remaining.count > 0) {
-            addInProgress()
-        }
-    }
-    
-    private func addInProgress() {
-        if remaining.count == 0 {
-            return
-        }
-        
-        let toLoad = remaining[0]
-        remaining.remove(at: 0)
-        
-        func loadingFinished() {
-            inProgress -= 1
-            print("Finished \(toLoad.index)")
-            fill()
-        }
-        
-        print("Starting \(toLoad.index)")
-        inProgress += 1
-        firstly {
+        for toLoad in all {
             toLoad.loadForDiskCache()
-        }.done(on: mainQueue) { _ in
-            loadingFinished()
-        }.catch(on: mainQueue) {
-            // Not much we can do, the UI also has the promise and can better handle it
-            print("Failed loading '\(toLoad.url)': \($0)")
-            loadingFinished()
         }
     }
     

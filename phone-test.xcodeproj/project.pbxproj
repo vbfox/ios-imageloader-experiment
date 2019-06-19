@@ -32,6 +32,7 @@
 		981C6B2B22B83BD7008F63A9 /* ImageUrlLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B2A22B83BD7008F63A9 /* ImageUrlLoader.swift */; };
 		981C6B2D22B83C08008F63A9 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B2C22B83C08008F63A9 /* ImageCache.swift */; };
 		981C6B3022B83CF5008F63A9 /* RandomUserTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B2F22B83CF5008F63A9 /* RandomUserTypes.swift */; };
+		981C6B3222BAF389008F63A9 /* ImageDownloadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B3122BAF389008F63A9 /* ImageDownloadQueue.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +94,7 @@
 		981C6B2A22B83BD7008F63A9 /* ImageUrlLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUrlLoader.swift; sourceTree = "<group>"; };
 		981C6B2C22B83C08008F63A9 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		981C6B2F22B83CF5008F63A9 /* RandomUserTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomUserTypes.swift; sourceTree = "<group>"; };
+		981C6B3122BAF389008F63A9 /* ImageDownloadQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDownloadQueue.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -200,6 +202,7 @@
 				981C6B2A22B83BD7008F63A9 /* ImageUrlLoader.swift */,
 				981C6B2C22B83C08008F63A9 /* ImageCache.swift */,
 				981C6B1C22B5A56E008F63A9 /* ImageListLoader.swift */,
+				981C6B3122BAF389008F63A9 /* ImageDownloadQueue.swift */,
 			);
 			path = ImageLoading;
 			sourceTree = "<group>";
@@ -356,6 +359,7 @@
 				981C6B2722B83A5A008F63A9 /* DownloadWithProgress.swift in Sources */,
 				981C6B2B22B83BD7008F63A9 /* ImageUrlLoader.swift in Sources */,
 				981C6B1B22B57904008F63A9 /* Utils.swift in Sources */,
+				981C6B3222BAF389008F63A9 /* ImageDownloadQueue.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
