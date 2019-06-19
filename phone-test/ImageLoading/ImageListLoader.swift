@@ -31,9 +31,6 @@ class ImageToLoad {
     let url: URL
     private let params: LoadingParameters
     private var isLoading: Bool = false
-    private var todoWhenLoaded: TodoWhenLoaded? = .none
-    private var loadingPromise: Promise<Void>? = .none
-    private var loadingResolver: Resolver<Void>? = .none
     
     fileprivate init(index: Int, url: URL, params: LoadingParameters) {
         self.index = index
@@ -55,7 +52,7 @@ class ImageToLoad {
         return params.downloadQueue.add(url: self.url)
     }
     
-    private func addToHybridCache(_ image: UIImage) {
+    private func addToCache(_ image: UIImage) {
         self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
     }
     
@@ -63,66 +60,12 @@ class ImageToLoad {
         params.imageLoaded(self.index, image)
     }
     
-    private func afterLoad(result: Result<UIImage>) {
-        let requestedTodoWhenLoaded = todoWhenLoaded!
-        isLoading = false
-        loadingResolver?.fulfill(())
-        loadingResolver = .none
-        todoWhenLoaded = .none
-        loadingPromise = .none
-        
-        switch result {
-        case .fulfilled(let image):
-            if requestedTodoWhenLoaded.addToHybridCache {
-                addToHybridCache(image)
-            }
-            if (requestedTodoWhenLoaded.notifyUI) {
-                notifyUI(image)
-            }
-            loadingResolver = .none
-        case .rejected(let error):
-            print("Image loading failed: \(error)")
-            if (requestedTodoWhenLoaded.notifyUI) {
-                notifyUI(.none)
-            }
+    func loadForUI() {
+        if isLoading {
+            return
         }
-    }
-    
-    private func beginLoading() {
-        let (promise, resolver) = Promise<Void>.pending()
+        
         isLoading = true
-        loadingPromise = promise
-        loadingResolver = resolver
-        todoWhenLoaded = TodoWhenLoaded()
-    }
-    
-    // Ensure that the image is in the memory cache
-    func loadForHybridCache() -> Promise<Void> {
-        if isLoading {
-            todoWhenLoaded?.addToHybridCache = true
-            return loadingPromise!
-        }
-
-        if params.imageCache.contains(url: self.url) {
-            return Promise.value(())
-        }
-        
-        beginLoading()
-        todoWhenLoaded?.addToHybridCache = true
-        firstly { self.download() }.tap(on: params.serialQueue, self.afterLoad).cauterize()
-        
-        return loadingPromise!
-    }
-    
-    func loadForUI() -> Promise<Void> {
-        if isLoading {
-            todoWhenLoaded?.addToHybridCache = true
-            todoWhenLoaded?.notifyUI = true
-            return loadingPromise!
-        }
-        
-        beginLoading()
-        todoWhenLoaded?.notifyUI = true
         firstly
             {
                 self.loadFromCache()
@@ -131,13 +74,20 @@ class ImageToLoad {
                 if let cachedImage = cacheResult {
                     return Promise<UIImage>.value(cachedImage)
                 } else {
-                    self.todoWhenLoaded?.addToHybridCache = true
                     return self.download()
                 }
             }
-            .tap(on: params.serialQueue, self.afterLoad)
-            .cauterize()
-        return loadingPromise!
+            .ensure(on: params.serialQueue) {
+                self.isLoading = false
+            }
+            .done(on: params.serialQueue) { image in
+                self.addToCache(image)
+                self.notifyUI(image)
+            }
+            .catch(on: params.serialQueue) { error in
+                print("Image loading failed: \(error)")
+                self.notifyUI(.none)
+            }
     }
 }
 
@@ -176,13 +126,13 @@ class ImageListLoader {
     
     func imageVisible(_ index: Int) {
         mainQueue.async {
-            self.all[index].loadForUI().cauterize()
+            self.all[index].loadForUI()
         }
     }
     
     func prefetch(_ index: Int) {
         mainQueue.async {
-            self.all[index].loadForHybridCache().cauterize()
+            self.all[index].loadForUI()
         }
     }
 }
