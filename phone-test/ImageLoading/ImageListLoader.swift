@@ -7,9 +7,10 @@ enum ImageLoadingError: Error {
 }
 
 enum LoadingState {
-    case notLoaded
-    case loading
-    case finished
+    case notLoading
+    case loadingForDiskCache
+    case loadingForPrefetch
+    case loadingForDisplay
 }
 
 typealias TransformImage = (UIImage) -> UIImage
@@ -23,13 +24,20 @@ private struct LoadingParameters {
     let imageLoaded: ImageLoaded
 }
 
+class TodoWhenLoaded {
+    var addToDiskCache: Bool = false
+    var addToHybridCache: Bool = false
+    var notifyUI = false
+}
+
 class ImageToLoad {
     private(set) var index: Int
     let url: URL
-    private var loading = false
-    private var loadingPromise: Promise<Void>? = .none
-    private let loadingRequested: Bool = false
     private let params: LoadingParameters
+    private var isLoading: Bool = false
+    private var todoWhenLoaded: TodoWhenLoaded? = .none
+    private var loadingPromise: Promise<Void>? = .none
+    private var loadingResolver: Resolver<Void>? = .none
     
     fileprivate init(index: Int, url: URL, params: LoadingParameters) {
         self.index = index
@@ -76,48 +84,120 @@ class ImageToLoad {
         }
     }
     
-    func startLoading() -> Promise<Void> {
-        if loading {
+    private func download() -> Promise<UIImage> {
+        return params.imageLoader.loadImageFrom(self.url, on: self.params.parallelQueue)
+    }
+    
+    private func addToDiskCache(_ image: UIImage) {
+        params.imageCache.addToDisk(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
+    }
+    
+    private func addToHybridCache(_ image: UIImage) {
+        self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
+    }
+    
+    private func notifyUI(_ image: UIImage?) {
+        params.imageLoaded(self.index, image)
+    }
+    
+    func afterLoad(result: Result<UIImage>) {
+        let requestedTodoWhenLoaded = todoWhenLoaded!
+        isLoading = false
+        loadingResolver?.fulfill(())
+        loadingResolver = .none
+        todoWhenLoaded = .none
+        loadingPromise = .none
+        
+        switch result {
+        case .fulfilled(let image):
+            if requestedTodoWhenLoaded.addToDiskCache {
+                addToDiskCache(image)
+            }
+            if requestedTodoWhenLoaded.addToHybridCache {
+                addToHybridCache(image)
+            }
+            if (requestedTodoWhenLoaded.notifyUI) {
+                notifyUI(image)
+            }
+            loadingResolver = .none
+        case .rejected(let error):
+            print("Image loading failed: \(error)")
+            if (requestedTodoWhenLoaded.notifyUI) {
+                notifyUI(.none)
+            }
+        }
+    }
+    
+    func beginLoading() {
+        let (promise, resolver) = Promise<Void>.pending()
+        isLoading = true
+        loadingPromise = promise
+        loadingResolver = resolver
+        todoWhenLoaded = TodoWhenLoaded()
+    }
+    
+    // Ensure that the image is in the disk cache
+    func loadForDiskCache() -> Promise<Void>{
+        if isLoading {
+            // Any type of async load will add to the disk cache one way or another
             return loadingPromise!
         }
         
-        loading = true
-        
-        let (promise, resolver) = Promise<Void>.pending()
-        self.loadingPromise = .some(promise)
-        
-        firstly {
-            self.loadFromCache()
-        }
-        .then(on: params.serialQueue) { cacheResult -> Promise<UIImage> in
-            if let cachedImage = cacheResult {
-                return Promise<UIImage>.value(cachedImage)
-            } else {
-                return self.loadFromNetworkAndCache()
-            }
-        }
-        .ensure(on: params.serialQueue) {
-            self.loading = false
-            self.loadingPromise = .none
-            resolver.fulfill(())
-        }
-        .done(on: params.serialQueue) {
-            self.params.imageLoaded(self.index, $0)
-        }
-        .catch {
-            print("Image loading failed: \($0)")
-            self.params.imageLoaded(self.index, .none)
+        if self.params.imageCache.containsOnDisk(url: self.url) {
+            return Promise.value(())
         }
         
-        return promise
+        beginLoading()
+        todoWhenLoaded?.addToDiskCache = true
+        firstly { self.download() }.tap(on: params.serialQueue, self.afterLoad).cauterize()
+        
+        return loadingPromise!
     }
     
-    func preload() -> Promise<Void> {
-        if (params.imageCache.contains(url: url)) {
-            return Promise<Void>.value(())
+    // Ensure that the image is in the memory cache
+    func loadForHybridCache() -> Promise<Void> {
+        if isLoading {
+            todoWhenLoaded?.addToDiskCache = false
+            todoWhenLoaded?.addToHybridCache = true
+            return loadingPromise!
+        }
+
+        if params.imageCache.contains(url: self.url) {
+            return Promise.value(())
         }
         
-        return startLoading()
+        beginLoading()
+        todoWhenLoaded?.addToHybridCache = true
+        firstly { self.download() }.tap(on: params.serialQueue, self.afterLoad).cauterize()
+        
+        return loadingPromise!
+    }
+    
+    func loadForUI() -> Promise<Void> {
+        if isLoading {
+            todoWhenLoaded?.addToDiskCache = false
+            todoWhenLoaded?.addToHybridCache = true
+            todoWhenLoaded?.notifyUI = true
+            return loadingPromise!
+        }
+        
+        beginLoading()
+        todoWhenLoaded?.notifyUI = true
+        firstly
+            {
+                self.loadFromCache()
+            }
+            .then { cacheResult -> Promise<UIImage> in
+                if let cachedImage = cacheResult {
+                    return Promise<UIImage>.value(cachedImage)
+                } else {
+                    self.todoWhenLoaded?.addToHybridCache = true
+                    return self.download()
+                }
+            }
+            .tap(on: params.serialQueue, self.afterLoad)
+            .cauterize()
+        return loadingPromise!
     }
 }
 
@@ -182,7 +262,7 @@ class ImageListLoader {
         print("Starting \(toLoad.index)")
         inProgress += 1
         firstly {
-            toLoad.preload()
+            toLoad.loadForDiskCache()
         }.done(on: mainQueue) { _ in
             loadingFinished()
         }.catch(on: mainQueue) {
@@ -193,10 +273,10 @@ class ImageListLoader {
     }
     
     func imageVisible(_ index: Int) {
-        all[index].startLoading().cauterize()
+        all[index].loadForUI().cauterize()
     }
     
     func prefetch(_ index: Int) {
-        all[index].preload().cauterize()
+        all[index].loadForHybridCache().cauterize()
     }
 }

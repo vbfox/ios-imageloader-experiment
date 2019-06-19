@@ -88,7 +88,8 @@ final class PhotosViewController: UICollectionViewController {
     }
 
     func transformImage(image: UIImage) -> UIImage {
-        // Beware transformations run on a separate queue
+        // Beware transformations don't run on the main queue
+
         return image.rounded(radius: 20)
     }
     
