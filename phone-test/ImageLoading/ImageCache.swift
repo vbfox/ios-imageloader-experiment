@@ -26,7 +26,7 @@ class CacheImageCache: ImageCache {
     init(name: String, sizeLimit: UInt) throws {
         let transformer = TransformerFactory.forImage()
         let diskConfig = DiskConfig(name: "net.vbfox.image-loader.\(name)", maxSize: sizeLimit)
-        let memoryConfig = MemoryConfig()
+        let memoryConfig = MemoryConfig(countLimit: 50)
         
         diskStorage = try DiskStorage(config: diskConfig, transformer: transformer)
         memoryStorage = MemoryStorage<UIImage>(config: memoryConfig)
