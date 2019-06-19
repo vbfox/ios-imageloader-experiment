@@ -25,7 +25,6 @@ final class PhotosViewController: UICollectionViewController {
         self.startLoadingResults();
     }
 
-    let progressView = UIProgressView(progressViewStyle: .default)
     let spinnerView = UIActivityIndicatorView(style: .gray)
     
     func showSpinnerView() {
@@ -36,18 +35,9 @@ final class PhotosViewController: UICollectionViewController {
             spinnerView.startAnimating()
         }
     }
-    
-    func showProgressView() {
-        if progressView.superview == .none {
-            self.view.addSubview(progressView)
-            progressView.center = self.view.center
-            progressView.setProgress(0, animated: false)
-        }
-    }
-    
-    func hideSpinnerAndProgressView() {
+
+    func hideSpinnerView() {
         spinnerView.stopAnimating()
-        progressView.removeFromSuperview()
         spinnerView.removeFromSuperview()
     }
     
@@ -74,9 +64,9 @@ final class PhotosViewController: UICollectionViewController {
         showSpinnerView()
         
         firstly {
-            RandomUser.get(resultCount: 5000, reportProgressTo: self.progressChanged)
+            RandomUser.get(resultCount: 500)
         }.ensure {
-            self.hideSpinnerAndProgressView()
+            self.hideSpinnerView()
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
@@ -87,20 +77,6 @@ final class PhotosViewController: UICollectionViewController {
         }
     }
 
-    func progressChanged(current: Int, total: Int) {
-        let percent = Float(current) / Float(total)
-        DispatchQueue.main.async {
-            if total > 0 {
-                if current != total {
-                    self.showProgressView()
-                }
-                self.progressView.setProgress(percent, animated: true)
-            } else {
-                self.showSpinnerView()
-            }
-        }
-    }
-    
     private func onImageFinishedLoading(index: Int, image: UIImage?) {
         // We can't use visibleCells as it's missing loaded cells that are out of screen
         for cell in cells {

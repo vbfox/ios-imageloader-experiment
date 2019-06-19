@@ -8,8 +8,7 @@ class RandomUser
     
     static func get(resultCount: Int = 500,
                     session: URLSession = URLSession.shared,
-                    bgQueue: DispatchObject? = bgq,
-                    reportProgressTo progress: @escaping ProgressReport)
+                    bgQueue: DispatchObject? = bgq)
         -> Promise<RandomUserResponse> {
         
         func createRequest() -> URLRequest {
@@ -20,10 +19,9 @@ class RandomUser
             return request
         }
         
-        let x: Promise<Data> = downloadWithProgress(createRequest(), reportProgressTo: progress)
         return firstly {
-            x
-        }.compactMap(on: bgq) { data in
+            URLSession.shared.dataTask(.promise, with: createRequest()).validate()
+            }.compactMap(on: bgq) { (data, _) in
             try JSONDecoder().decode(RandomUserResponse.self, from: data)
         }
     }
