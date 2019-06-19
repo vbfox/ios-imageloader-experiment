@@ -64,13 +64,13 @@ class ImageDownloadQueue {
         inProgress += 1
         firstly {
             self.loader.loadImageFrom(toLoad.url, on: processQueue)
-            }.done(on: dispatch) { image in
-                toLoad.resolver.fulfill(image)
-                loadingFinished()
-            }.catch(on: dispatch) { error in
-                toLoad.resolver.reject(error)
-                print("Failed loading '\(toLoad.url)': \(error)")
-                loadingFinished()
+        }.done(on: dispatch) { image in
+            toLoad.resolver.fulfill(image)
+            loadingFinished()
+        }.catch(on: dispatch) { error in
+            toLoad.resolver.reject(error)
+            print("Failed loading '\(toLoad.url)': \(error)")
+            loadingFinished()
         }
     }
     

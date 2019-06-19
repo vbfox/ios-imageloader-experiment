@@ -5,15 +5,9 @@ import PromiseKit
 
 protocol ImageCache {
     func add(url: URL, image: UIImage) -> Promise<Void>
-    func addToDisk(url: URL, image: UIImage) -> Promise<Void>
     func tryGet(url: URL) -> Promise<UIImage?>
     func clear()
-    func containsOnDisk(url: URL) -> Bool
     func contains(url: URL) -> Bool
-}
-
-enum FileSystemCacheError: Error {
-    case cacheExistsButIsAFile(path: String)
 }
 
 class CacheImageCache: ImageCache {
@@ -37,22 +31,7 @@ class CacheImageCache: ImageCache {
         storage = Storage(hybridStorage: hybridStorage)
         storage.async.removeExpiredObjects { _ in }
     }
-    
-    func addToDisk(url: URL, image: UIImage) -> Promise<Void> {
-        let (promise, resolver) = Promise<Void>.pending()
-        
-        serialQueue.async {
-            do {
-                try self.diskStorage.setObject(image, forKey: url.absoluteString, expiry: nil)
-                resolver.fulfill(())
-            } catch {
-                resolver.reject(error)
-            }
-        }
 
-        return promise
-    }
-    
     func add(url: URL, image: UIImage) -> Promise<Void> {
         let (promise, resolver) = Promise<Void>.pending()
         
@@ -88,11 +67,11 @@ class CacheImageCache: ImageCache {
         return try! storage.existsObject(forKey: url.absoluteString)
     }
     
-    func containsOnDisk(url: URL) -> Bool {
-        return try! diskStorage.existsObject(forKey: url.absoluteString)
-    }
-    
     func clear() {
-        try! storage.removeAll()
+        do {
+            try storage.removeAll()
+        } catch {
+            // Permission errors can happen on real device
+        }
     }
 }

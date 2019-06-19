@@ -22,7 +22,6 @@ private struct LoadingParameters {
 }
 
 class TodoWhenLoaded {
-    var addToDiskCache: Bool = false
     var addToHybridCache: Bool = false
     var notifyUI = false
 }
@@ -56,10 +55,6 @@ class ImageToLoad {
         return params.downloadQueue.add(url: self.url)
     }
     
-    private func addToDiskCache(_ image: UIImage) {
-        params.imageCache.addToDisk(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
-    }
-    
     private func addToHybridCache(_ image: UIImage) {
         self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
     }
@@ -78,9 +73,6 @@ class ImageToLoad {
         
         switch result {
         case .fulfilled(let image):
-            if requestedTodoWhenLoaded.addToDiskCache {
-                addToDiskCache(image)
-            }
             if requestedTodoWhenLoaded.addToHybridCache {
                 addToHybridCache(image)
             }
@@ -104,28 +96,9 @@ class ImageToLoad {
         todoWhenLoaded = TodoWhenLoaded()
     }
     
-    // Ensure that the image is in the disk cache
-    func loadForDiskCache() -> Promise<Void>{
-        if isLoading {
-            // Any type of async load will add to the disk cache one way or another
-            return loadingPromise!
-        }
-        
-        if self.params.imageCache.containsOnDisk(url: self.url) {
-            return Promise.value(())
-        }
-        
-        beginLoading()
-        todoWhenLoaded?.addToDiskCache = true
-        firstly { self.download() }.tap(on: params.serialQueue, self.afterLoad).cauterize()
-        
-        return loadingPromise!
-    }
-    
     // Ensure that the image is in the memory cache
     func loadForHybridCache() -> Promise<Void> {
         if isLoading {
-            todoWhenLoaded?.addToDiskCache = false
             todoWhenLoaded?.addToHybridCache = true
             return loadingPromise!
         }
@@ -143,7 +116,6 @@ class ImageToLoad {
     
     func loadForUI() -> Promise<Void> {
         if isLoading {
-            todoWhenLoaded?.addToDiskCache = false
             todoWhenLoaded?.addToHybridCache = true
             todoWhenLoaded?.notifyUI = true
             return loadingPromise!
@@ -155,7 +127,7 @@ class ImageToLoad {
             {
                 self.loadFromCache()
             }
-            .then { cacheResult -> Promise<UIImage> in
+            .then(on: params.serialQueue) { cacheResult -> Promise<UIImage> in
                 if let cachedImage = cacheResult {
                     return Promise<UIImage>.value(cachedImage)
                 } else {
@@ -200,12 +172,6 @@ class ImageListLoader {
             .map { (i, url) in
                 ImageToLoad(index: i, url: url, params: params)
             }
-        
-        mainQueue.async {
-            for toLoad in self.all {
-                toLoad.loadForDiskCache().cauterize()
-            }
-        }
     }
     
     func imageVisible(_ index: Int) {
