@@ -2,32 +2,15 @@ import UIKit
 import PromiseKit
 import PMKFoundation
 
-enum ImageLoadingError: Error {
-    case invalidSate
-}
-
-enum LoadingState {
-    case notLoading
-    case loadingForDiskCache
-    case loadingForPrefetch
-    case loadingForDisplay
-}
-
 private struct LoadingParameters {
     let downloadQueue: ImageDownloadQueue
     let imageCache: ImageCache
     let serialQueue: DispatchQueue
-    let parallelQueue: DispatchQueue
     let imageLoaded: ImageLoaded
 }
 
-class TodoWhenLoaded {
-    var addToHybridCache: Bool = false
-    var notifyUI = false
-}
-
 class ImageToLoad {
-    private(set) var index: Int
+    let index: Int
     let url: URL
     private let params: LoadingParameters
     private var isLoading: Bool = false
@@ -60,7 +43,7 @@ class ImageToLoad {
         params.imageLoaded(self.index, image)
     }
     
-    func loadForUI() {
+    func load() {
         if isLoading {
             return
         }
@@ -113,7 +96,6 @@ class ImageListLoader {
         let params = LoadingParameters(downloadQueue: downloadQueue,
                                        imageCache: imageCache,
                                        serialQueue: mainQueue,
-                                       parallelQueue: imageProcessQueue,
                                        imageLoaded: imageLoadedOnMain)
 
         all =
@@ -126,13 +108,13 @@ class ImageListLoader {
     
     func imageVisible(_ index: Int) {
         mainQueue.async {
-            self.all[index].loadForUI()
+            self.all[index].load()
         }
     }
     
     func prefetch(_ index: Int) {
         mainQueue.async {
-            self.all[index].loadForUI()
+            self.all[index].load()
         }
     }
 }
