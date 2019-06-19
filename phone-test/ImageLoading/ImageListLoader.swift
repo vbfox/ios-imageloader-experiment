@@ -36,7 +36,9 @@ class ImageToLoad {
     }
     
     private func addToCache(_ image: UIImage) {
-        self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
+        self.params.imageCache
+            .add(url: self.url, image: image)
+            .catch(on: params.serialQueue) { err in print("Can't add to cache: \(err)") }
     }
     
     private func notifyUI(_ image: UIImage?) {
@@ -53,18 +55,20 @@ class ImageToLoad {
             {
                 self.loadFromCache()
             }
-            .then(on: params.serialQueue) { cacheResult -> Promise<UIImage> in
+            .then(on: params.serialQueue) { cacheResult -> Promise<(Bool, UIImage)> in
                 if let cachedImage = cacheResult {
-                    return Promise<UIImage>.value(cachedImage)
+                    return Promise<(Bool, UIImage)>.value((false, cachedImage))
                 } else {
-                    return self.download()
+                    return self.download().map { x in (true, x) }
                 }
             }
             .ensure(on: params.serialQueue) {
                 self.isLoading = false
             }
-            .done(on: params.serialQueue) { image in
-                self.addToCache(image)
+            .done(on: params.serialQueue) { (addToCache, image) in
+                if addToCache {
+                    self.addToCache(image)
+                }
                 self.notifyUI(image)
             }
             .catch(on: params.serialQueue) { error in

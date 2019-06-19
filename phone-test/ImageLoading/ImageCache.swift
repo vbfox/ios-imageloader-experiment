@@ -13,9 +13,9 @@ protocol ImageCache {
 class CacheImageCache: ImageCache {
     private let storage: Storage<UIImage>
     
-    init(name: String, sizeLimit: UInt) throws {
+    init(sizeLimit: UInt) throws {
         let transformer = TransformerFactory.forImage()
-        let diskConfig = DiskConfig(name: "net.vbfox.image-loader.\(name)", maxSize: sizeLimit)
+        let diskConfig = DiskConfig(name: "net.vbfox.image-loader", maxSize: sizeLimit)
         let memoryConfig = MemoryConfig(countLimit: 50)
         
         storage = try! Storage(

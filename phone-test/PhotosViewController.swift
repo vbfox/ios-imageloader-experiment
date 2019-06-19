@@ -21,7 +21,7 @@ final class PhotosViewController: UICollectionViewController {
             UIBarButtonItem(title: "Refresh", style: .plain, target: self, action: #selector(refresh))
         ]
         
-        imageCache = try! CacheImageCache.init(name: "Photos", sizeLimit: 10 * 1024 * 1024)
+        imageCache = try! CacheImageCache.init(sizeLimit: 10 * 1024 * 1024)
         self.startLoadingResults();
     }
 
