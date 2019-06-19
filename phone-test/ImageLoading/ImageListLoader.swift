@@ -25,7 +25,7 @@ class ImageToLoad {
         return firstly {
             self.params.imageCache.tryGet(url: url)
         }
-        .recover { (error: Error) -> Promise<UIImage?> in
+        .recover(on: params.serialQueue) { (error: Error) -> Promise<UIImage?> in
             print("Load from cache error: \(error)")
             return Promise.value(.none)
         }
@@ -62,16 +62,15 @@ class ImageToLoad {
                     return self.download().map { x in (true, x) }
                 }
             }
-            .ensure(on: params.serialQueue) {
-                self.isLoading = false
-            }
             .done(on: params.serialQueue) { (addToCache, image) in
+                self.isLoading = false
                 if addToCache {
                     self.addToCache(image)
                 }
                 self.notifyUI(image)
             }
             .catch(on: params.serialQueue) { error in
+                self.isLoading = false
                 print("Image loading failed: \(error)")
                 self.notifyUI(.none)
             }
