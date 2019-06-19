@@ -11,24 +11,18 @@ protocol ImageCache {
 }
 
 class CacheImageCache: ImageCache {
-    private let memoryStorage: MemoryStorage<UIImage>
-    private let diskStorage: DiskStorage<UIImage>
-    private let hybridStorage: HybridStorage<UIImage>
     private let storage: Storage<UIImage>
-    private let serialQueue: DispatchQueue
     
     init(name: String, sizeLimit: UInt) throws {
         let transformer = TransformerFactory.forImage()
         let diskConfig = DiskConfig(name: "net.vbfox.image-loader.\(name)", maxSize: sizeLimit)
         let memoryConfig = MemoryConfig(countLimit: 50)
         
-        diskStorage = try DiskStorage(config: diskConfig, transformer: transformer)
-        memoryStorage = MemoryStorage<UIImage>(config: memoryConfig)
-        hybridStorage = HybridStorage(memoryStorage: memoryStorage, diskStorage: diskStorage)
-        
-        serialQueue = DispatchQueue(label: "Cache.AsyncStorage.SerialQueue")
-        
-        storage = Storage(hybridStorage: hybridStorage)
+        storage = try! Storage(
+            diskConfig: diskConfig,
+            memoryConfig: memoryConfig,
+            transformer: transformer
+        )
         storage.async.removeExpiredObjects { _ in }
     }
 
