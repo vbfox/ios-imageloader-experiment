@@ -13,14 +13,11 @@ enum LoadingState {
     case loadingForDisplay
 }
 
-typealias TransformImage = (UIImage) -> UIImage
-
 private struct LoadingParameters {
     let imageLoader: ImageUrlLoader
     let imageCache: ImageCache
     let serialQueue: DispatchQueue
     let parallelQueue: DispatchQueue
-    let transform: TransformImage?
     let imageLoaded: ImageLoaded
 }
 
@@ -49,13 +46,6 @@ class ImageToLoad {
         return firstly {
             self.params.imageCache.tryGet(url: url)
         }
-        .map(on: params.parallelQueue) { image -> UIImage? in
-            if let foundImage = image {
-                return self.runTransform(foundImage)
-            } else {
-                return .none
-            }
-        }
         .recover { (error: Error) -> Promise<UIImage?> in
             print("Load from cache error: \(error)")
             return Promise.value(.none)
@@ -70,17 +60,6 @@ class ImageToLoad {
             // Don't wait for the add to finish, if it fail we can't do much
             self.params.imageCache.add(url: self.url, image: image).catch { err in print("Can't add to cache: \(err)") }
             return Promise<UIImage>.value(image)
-        }
-        .map(on: params.parallelQueue) { image -> UIImage in
-            return self.runTransform(image)
-        }
-    }
-    
-    private func runTransform(_ image: UIImage) -> UIImage {
-        if let transform = self.params.transform {
-            return transform(image)
-        } else {
-            return image
         }
     }
     
@@ -213,7 +192,7 @@ class ImageListLoader {
     private var remaining: [ImageToLoad] = []
     private let currentIndex: Int = 0
     
-    init(urls: [URL], transform: TransformImage? = .none, imageLoader: ImageUrlLoader, imageCache: ImageCache, imageLoaded: @escaping ImageLoaded) {
+    init(urls: [URL], imageLoader: ImageUrlLoader, imageCache: ImageCache, imageLoaded: @escaping ImageLoaded) {
         let imageLoadedOnMain = { (index: Int, image: UIImage?) in
             DispatchQueue.main.async {
                 imageLoaded(index, image)
@@ -223,7 +202,6 @@ class ImageListLoader {
                                        imageCache: imageCache,
                                        serialQueue: mainQueue,
                                        parallelQueue: imageProcessQueue,
-                                       transform: transform,
                                        imageLoaded: imageLoadedOnMain)
 
         all =

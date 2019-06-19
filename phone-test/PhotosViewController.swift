@@ -80,19 +80,13 @@ final class PhotosViewController: UICollectionViewController {
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageListLoader.init(urls: urls, transform: self.transformImage, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache, imageLoaded: self.onImageFinishedLoading)
+            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache, imageLoaded: self.onImageFinishedLoading)
             self.collectionView!.reloadData()
         }.catch {
             print($0)
         }
     }
 
-    func transformImage(image: UIImage) -> UIImage {
-        // Beware transformations don't run on the main queue
-
-        return image.rounded(radius: 20)
-    }
-    
     func progressChanged(current: Int, total: Int) {
         let percent = Float(current) / Float(total)
         DispatchQueue.main.async {
