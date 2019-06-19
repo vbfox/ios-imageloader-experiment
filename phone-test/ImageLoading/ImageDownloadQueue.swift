@@ -27,12 +27,17 @@ class ImageDownloadQueue {
     }
     
     func add(url: URL) -> Promise<UIImage> {
-        let item = ImageDownloadQueueItem(url: url)
-        dispatch.async {
-            self.queue.append(item)
-            self.fill()
+        return dispatch.sync {
+            let maybeItem = queue.first { x in x.url == url }
+            if let item = maybeItem {
+                return item.promise
+            } else {
+                let item = ImageDownloadQueueItem(url: url)
+                self.queue.append(item)
+                self.fill()
+                return item.promise
+            }
         }
-        return item.promise
     }
     
     private func fill() {

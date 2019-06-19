@@ -201,8 +201,10 @@ class ImageListLoader {
                 ImageToLoad(index: i, url: url, params: params)
             }
         
-        for toLoad in all {
-            toLoad.loadForDiskCache()
+        mainQueue.async {
+            for toLoad in self.all {
+                toLoad.loadForDiskCache().cauterize()
+            }
         }
     }
     
