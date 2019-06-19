@@ -251,10 +251,14 @@ class ImageListLoader {
     }
     
     func imageVisible(_ index: Int) {
-        all[index].loadForUI().cauterize()
+        mainQueue.async {
+            self.all[index].loadForUI().cauterize()
+        }
     }
     
     func prefetch(_ index: Int) {
-        all[index].loadForHybridCache().cauterize()
+        mainQueue.async {
+            self.all[index].loadForHybridCache().cauterize()
+        }
     }
 }
