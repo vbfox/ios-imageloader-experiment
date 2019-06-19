@@ -102,9 +102,7 @@ final class PhotosViewController: UICollectionViewController {
     }
     
     private func onImageFinishedLoading(index: Int, image: UIImage?) {
-        // We can't use visibleCells as it's missing loaded cells that are out of screen, and cells can't
-        // subscribe to their promises as tehre is not way to unsubscribe also looping a few elements and
-        // comparing integers is cheap (We're on the main thread)
+        // We can't use visibleCells as it's missing loaded cells that are out of screen
         for cell in cells {
             if cell.index == index {
                 cell.showImage(image)
@@ -129,7 +127,7 @@ extension PhotosViewController
         
         let photoIndex = indexPath.row
         let user = self.users[photoIndex]
-        loader!.imageVisible(photoIndex)
+        loader!.show(photoIndex)
 
         cell.showUser(user, atIndex: photoIndex)
         
@@ -145,7 +143,6 @@ extension PhotosViewController: UICollectionViewDataSourcePrefetching {
     }
     
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
-        // No need to cancel as we don't force-start downloads until the item is really in view
     }
 }
 

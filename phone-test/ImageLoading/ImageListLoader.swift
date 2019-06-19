@@ -79,8 +79,6 @@ class ImageToLoad {
 
 typealias ImageLoaded = (Int, UIImage?) -> Void
 
-
-
 class ImageListLoader {
     private let mainQueue = DispatchQueue(label: "net.vbfox.imageloader.main", qos: .userInitiated)
     private let imageProcessQueue = DispatchQueue(label: "net.vbfox.imageloader.process", qos: .background, attributes: .concurrent)
@@ -109,7 +107,7 @@ class ImageListLoader {
             }
     }
     
-    func imageVisible(_ index: Int) {
+    func show(_ index: Int) {
         mainQueue.async {
             self.all[index].load()
         }

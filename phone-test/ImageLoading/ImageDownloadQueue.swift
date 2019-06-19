@@ -56,11 +56,11 @@ class ImageDownloadQueue {
         
         func loadingFinished() {
             inProgress -= 1
-            print("Finished \(toLoad.url)")
+            print("ImageDownloadQueue: Finished \(toLoad.url)")
             fill()
         }
         
-        print("Starting \(toLoad.url)")
+        print("ImageDownloadQueue: Starting \(toLoad.url)")
         inProgress += 1
         firstly {
             self.loader.loadImageFrom(toLoad.url, on: processQueue)
@@ -69,21 +69,8 @@ class ImageDownloadQueue {
             loadingFinished()
         }.catch(on: dispatch) { error in
             toLoad.resolver.reject(error)
-            print("Failed loading '\(toLoad.url)': \(error)")
+            print("ImageDownloadQueue: Failed loading '\(toLoad.url)': \(error)")
             loadingFinished()
-        }
-    }
-    
-    public func prioritize(url: URL) {
-        dispatch.async {
-            let index = self.queue.firstIndex { x in x.url == url }
-            if let index = index {
-                if index != 0 {
-                    let value = self.queue[index]
-                    self.queue.remove(at: index)
-                    self.queue.insert(value, at: 0)
-                }
-            }
         }
     }
 }
