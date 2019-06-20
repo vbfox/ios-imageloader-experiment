@@ -1,12 +1,5 @@
-//
-//  phone_testTests.swift
-//  phone-testTests
-//
-//  Created by Julien Roncaglia on 15/06/2019.
-//  Copyright © 2019 Julien Roncaglia. All rights reserved.
-//
-
 import XCTest
+import PromiseKit
 @testable import phone_test
 
 class phone_testTests: XCTestCase {
@@ -30,5 +23,4 @@ class phone_testTests: XCTestCase {
             // Put the code you want to measure the time of here.
         }
     }
-
 }
