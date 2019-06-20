@@ -70,7 +70,11 @@ final class PhotosViewController: UICollectionViewController {
         }.done { response in
             let urls = response.results.map { user in URL(string: user.picture!.large!)! }
             self.users = response.results
-            self.loader = ImageListLoader.init(urls: urls, imageLoader: ImageUrlSessionLoader.init(), imageCache: self.imageCache, imageLoaded: self.onImageFinishedLoading)
+            self.loader = ImageListLoader.init(
+                urls: urls,
+                imageLoader: ImageUrlSessionLoader.init(),
+                imageCache: self.imageCache,
+                imageLoaded: self.onImageFinishedLoading)
             self.collectionView!.reloadData()
         }.catch {
             print($0)
