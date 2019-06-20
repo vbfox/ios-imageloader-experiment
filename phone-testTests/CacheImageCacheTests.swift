@@ -10,6 +10,7 @@ class CacheImageCacheTests: XCTestCase {
     func testAddAndGet() throws {
         let ex = expectation(description: "")
         let cache = try CacheImageCache.init(sizeLimit: 10 * 1000)
+        cache.clear()
         
         let url = URL(string: "https://example.com/a")!
         cache.add(url: url, image: UIImage(named: "zenly_lion")!).done { _ in ex.fulfill() }.cauterize()
@@ -19,6 +20,7 @@ class CacheImageCacheTests: XCTestCase {
     func testContains() throws {
         let ex = expectation(description: "")
         let cache = try CacheImageCache.init(sizeLimit: 10 * 1000)
+        cache.clear()
         let url = URL(string: "https://example.com/a")!
         
         XCTAssertFalse(cache.contains(url: url))
@@ -33,6 +35,7 @@ class CacheImageCacheTests: XCTestCase {
     func testClear() throws {
         let ex = expectation(description: "")
         let cache = try CacheImageCache.init(sizeLimit: 10 * 1000)
+        cache.clear()
         let url = URL(string: "https://example.com/a")!
         
         cache.add(url: url, image: UIImage(named: "zenly_lion")!).done { _ in

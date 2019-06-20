@@ -1,5 +1,4 @@
 import Foundation
-
 import XCTest
 import PromiseKit
 @testable import phone_test
@@ -38,8 +37,8 @@ class ImageDownloadQueueTests: XCTestCase {
     }
     
     func testParallelLimit() {
-        let ex1 = expectation(description: "")
-        let ex2 = expectation(description: "")
+        let ex1 = expectation(description: "1")
+        let ex2 = expectation(description: "2")
         let loader = TestLoader()
         let dlQueue = ImageDownloadQueue(loader: loader, maxInProgress: 1)
         
@@ -66,11 +65,5 @@ class ImageDownloadQueueTests: XCTestCase {
         
         r2.fulfill(img2)
         wait(for: [ex2], timeout: 1)
-    }
-}
-
-class ImageListLoaderTests: XCTestCase {
-    func testBasicFeature() {
-        
     }
 }

@@ -108,8 +108,10 @@ class ImageListLoader {
     }
     
     func show(_ index: Int) {
-        mainQueue.async {
-            self.all[index].load()
+        if index >= 0 && index < all.count {
+            mainQueue.async {
+                self.all[index].load()
+            }
         }
     }
 }
