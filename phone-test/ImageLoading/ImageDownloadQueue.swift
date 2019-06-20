@@ -14,7 +14,9 @@ struct ImageDownloadQueueItem {
 }
 
 class ImageDownloadQueue {
+    // Where the download queue is managed
     private let dispatch = DispatchQueue(label: "net.vbfox.downloadqueue", qos: .background)
+    // Where the bytes are decoded to an image
     private let processQueue = DispatchQueue(label: "net.vbfox.net.vbfox.downloadqueue.process", qos: .background, attributes: .concurrent)
     private var queue: [ImageDownloadQueueItem] = []
     private var inProgress: Int = 0
