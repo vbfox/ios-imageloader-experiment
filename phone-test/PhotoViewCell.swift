@@ -2,7 +2,7 @@ import UIKit
 import PromiseKit
 
 class PhotoViewCell: UICollectionViewCell {
-    private static let defaultImage = UIImage(named: "PoopRainbow_Avatar")
+    private static let defaultImage = UIImage(named: "zenly_lion")
     @IBOutlet weak var photoImageView: UIImageView!
     
     @IBOutlet weak var nameLabel: UILabel!
