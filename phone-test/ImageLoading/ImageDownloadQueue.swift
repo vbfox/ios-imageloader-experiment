@@ -43,7 +43,7 @@ class ImageDownloadQueue {
     }
     
     private func fill() {
-        while(inProgress <= maxInProgress && queue.count > 0) {
+        while(inProgress < maxInProgress && queue.count > 0) {
             addInProgress()
         }
     }

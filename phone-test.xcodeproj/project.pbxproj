@@ -34,6 +34,7 @@
 		981C6B3A22BC1610008F63A9 /* PromiseKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B3722BC15E9008F63A9 /* PromiseKit.framework */; };
 		981C6B3B22BC1610008F63A9 /* PromiseKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 981C6B3722BC15E9008F63A9 /* PromiseKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		981C6B3E22BC1BC2008F63A9 /* CacheImageCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B3C22BC1BC2008F63A9 /* CacheImageCacheTests.swift */; };
+		981C6B4122BC1D75008F63A9 /* ImageDownloadQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981C6B3F22BC1D75008F63A9 /* ImageDownloadQueueTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +97,7 @@
 		981C6B3122BAF389008F63A9 /* ImageDownloadQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDownloadQueue.swift; sourceTree = "<group>"; };
 		981C6B3722BC15E9008F63A9 /* PromiseKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PromiseKit.framework; path = Carthage/Build/iOS/PromiseKit.framework; sourceTree = SOURCE_ROOT; };
 		981C6B3C22BC1BC2008F63A9 /* CacheImageCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheImageCacheTests.swift; sourceTree = "<group>"; };
+		981C6B3F22BC1D75008F63A9 /* ImageDownloadQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDownloadQueueTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -177,6 +179,7 @@
 				981C6AF222B4CE14008F63A9 /* phone_testTests.swift */,
 				981C6AF422B4CE14008F63A9 /* Info.plist */,
 				981C6B3C22BC1BC2008F63A9 /* CacheImageCacheTests.swift */,
+				981C6B3F22BC1D75008F63A9 /* ImageDownloadQueueTests.swift */,
 			);
 			path = "phone-testTests";
 			sourceTree = "<group>";
@@ -370,6 +373,7 @@
 			files = (
 				981C6AF322B4CE14008F63A9 /* phone_testTests.swift in Sources */,
 				981C6B3E22BC1BC2008F63A9 /* CacheImageCacheTests.swift in Sources */,
+				981C6B4122BC1D75008F63A9 /* ImageDownloadQueueTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
