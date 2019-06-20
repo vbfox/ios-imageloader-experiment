@@ -3,7 +3,7 @@ import PromiseKit
 
 final class PhotosViewController: UICollectionViewController {
     private let reuseIdentifier = "PhotoCell"
-    private let itemsPerRow: Int = 3
+    private var itemsPerRow: Int = 3
     private let sectionInsets = UIEdgeInsets(top: 20.0, left: 10.0, bottom: 20.0, right: 10.0)
     private var users: [RandomUserInfo] = []
     private var loader: ImageListLoader?
@@ -23,6 +23,7 @@ final class PhotosViewController: UICollectionViewController {
         
         imageCache = try! CacheImageCache.init(sizeLimit: 10 * 1024 * 1024)
         self.startLoadingResults();
+        self.updateItemsPerRow()
     }
 
     let spinnerView = UIActivityIndicatorView(style: .gray)
@@ -88,6 +89,19 @@ final class PhotosViewController: UICollectionViewController {
                 cell.showImage(image)
             }
         }
+    }
+    
+    func updateItemsPerRow() {
+        let width = self.view.bounds.size.width
+        self.itemsPerRow = Int(width / CGFloat(125))
+        self.collectionView!.reloadData()
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: nil, completion: { _ in
+            self.updateItemsPerRow()
+        })
     }
 }
 
