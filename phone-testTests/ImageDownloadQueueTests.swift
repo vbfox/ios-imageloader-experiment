@@ -68,3 +68,9 @@ class ImageDownloadQueueTests: XCTestCase {
         wait(for: [ex2], timeout: 1)
     }
 }
+
+class ImageListLoaderTests: XCTestCase {
+    func testBasicFeature() {
+        
+    }
+}

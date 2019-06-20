@@ -114,7 +114,7 @@ extension PhotosViewController
 extension PhotosViewController: UICollectionViewDataSourcePrefetching {
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
         for indexPath in indexPaths {
-            loader!.prefetch(indexPath.row)
+            loader!.show(indexPath.row)
         }
     }
     

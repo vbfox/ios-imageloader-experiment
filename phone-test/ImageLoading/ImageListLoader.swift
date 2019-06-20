@@ -112,10 +112,4 @@ class ImageListLoader {
             self.all[index].load()
         }
     }
-    
-    func prefetch(_ index: Int) {
-        mainQueue.async {
-            self.all[index].load()
-        }
-    }
 }
